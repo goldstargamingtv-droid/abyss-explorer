@@ -1,0 +1,365 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Keyboard Shortcuts",
+  "description": "Complete keyboard shortcut reference for Abyss Explorer",
+  "version": "1.0.0",
+  
+  "categories": {
+    "navigation": {
+      "name": "Navigation",
+      "description": "Controls for moving around the fractal",
+      "shortcuts": [
+        {
+          "keys": ["Click"],
+          "action": "Zoom in at cursor",
+          "description": "Click anywhere to zoom into that location"
+        },
+        {
+          "keys": ["Shift", "Click"],
+          "action": "Zoom out",
+          "description": "Shift-click to zoom out from current view"
+        },
+        {
+          "keys": ["Scroll Up"],
+          "action": "Zoom in",
+          "description": "Scroll up to zoom in at cursor position"
+        },
+        {
+          "keys": ["Scroll Down"],
+          "action": "Zoom out",
+          "description": "Scroll down to zoom out"
+        },
+        {
+          "keys": ["Drag"],
+          "action": "Pan view",
+          "description": "Click and drag to pan the view"
+        },
+        {
+          "keys": ["Arrow Keys"],
+          "action": "Pan view",
+          "description": "Use arrow keys to pan in any direction"
+        },
+        {
+          "keys": ["+", "="],
+          "action": "Zoom in",
+          "description": "Zoom in at center"
+        },
+        {
+          "keys": ["-"],
+          "action": "Zoom out",
+          "description": "Zoom out from center"
+        },
+        {
+          "keys": ["R"],
+          "action": "Reset view",
+          "description": "Reset to default view"
+        },
+        {
+          "keys": ["H"],
+          "action": "Home",
+          "description": "Return to starting position"
+        }
+      ]
+    },
+    
+    "rendering": {
+      "name": "Rendering Controls",
+      "description": "Controls for render quality and iterations",
+      "shortcuts": [
+        {
+          "keys": ["["],
+          "action": "Decrease iterations",
+          "description": "Reduce max iterations by step"
+        },
+        {
+          "keys": ["]"],
+          "action": "Increase iterations",
+          "description": "Increase max iterations by step"
+        },
+        {
+          "keys": ["Q"],
+          "action": "Toggle quality",
+          "description": "Cycle through quality presets"
+        },
+        {
+          "keys": ["A"],
+          "action": "Toggle anti-aliasing",
+          "description": "Enable/disable supersampling"
+        },
+        {
+          "keys": ["G"],
+          "action": "Toggle GPU acceleration",
+          "description": "Switch between CPU and GPU rendering"
+        }
+      ]
+    },
+    
+    "fractalTypes": {
+      "name": "Fractal Selection",
+      "description": "Quick keys to switch fractal types",
+      "shortcuts": [
+        {
+          "keys": ["1"],
+          "action": "Mandelbrot set",
+          "description": "Switch to Mandelbrot fractal"
+        },
+        {
+          "keys": ["2"],
+          "action": "Julia set",
+          "description": "Switch to Julia fractal"
+        },
+        {
+          "keys": ["3"],
+          "action": "Burning Ship",
+          "description": "Switch to Burning Ship fractal"
+        },
+        {
+          "keys": ["4"],
+          "action": "Tricorn",
+          "description": "Switch to Tricorn/Mandelbar"
+        },
+        {
+          "keys": ["5"],
+          "action": "Newton",
+          "description": "Switch to Newton fractal"
+        },
+        {
+          "keys": ["6"],
+          "action": "Phoenix",
+          "description": "Switch to Phoenix fractal"
+        },
+        {
+          "keys": ["7"],
+          "action": "3D Mandelbulb",
+          "description": "Switch to 3D Mandelbulb"
+        },
+        {
+          "keys": ["8"],
+          "action": "3D Mandelbox",
+          "description": "Switch to 3D Mandelbox"
+        },
+        {
+          "keys": ["9"],
+          "action": "Custom formula",
+          "description": "Open custom formula editor"
+        }
+      ]
+    },
+    
+    "colors": {
+      "name": "Color Controls",
+      "description": "Palette and coloring shortcuts",
+      "shortcuts": [
+        {
+          "keys": ["C"],
+          "action": "Cycle palettes",
+          "description": "Switch to next color palette"
+        },
+        {
+          "keys": ["Shift", "C"],
+          "action": "Previous palette",
+          "description": "Switch to previous color palette"
+        },
+        {
+          "keys": ["P"],
+          "action": "Toggle palette cycling",
+          "description": "Enable/disable animated palette cycling"
+        },
+        {
+          "keys": [","],
+          "action": "Shift palette left",
+          "description": "Rotate palette colors left"
+        },
+        {
+          "keys": ["."],
+          "action": "Shift palette right",
+          "description": "Rotate palette colors right"
+        },
+        {
+          "keys": ["M"],
+          "action": "Cycle coloring mode",
+          "description": "Switch coloring algorithm"
+        }
+      ]
+    },
+    
+    "interface": {
+      "name": "Interface",
+      "description": "UI visibility and layout controls",
+      "shortcuts": [
+        {
+          "keys": ["F"],
+          "action": "Toggle fullscreen",
+          "description": "Enter/exit fullscreen mode"
+        },
+        {
+          "keys": ["Tab"],
+          "action": "Toggle sidebar",
+          "description": "Show/hide the control sidebar"
+        },
+        {
+          "keys": ["I"],
+          "action": "Toggle info overlay",
+          "description": "Show/hide coordinate info"
+        },
+        {
+          "keys": ["?"],
+          "action": "Show help",
+          "description": "Open help/tutorial modal"
+        },
+        {
+          "keys": ["Escape"],
+          "action": "Close/cancel",
+          "description": "Close modal or cancel operation"
+        }
+      ]
+    },
+    
+    "history": {
+      "name": "History",
+      "description": "Undo/redo and navigation history",
+      "shortcuts": [
+        {
+          "keys": ["Ctrl/Cmd", "Z"],
+          "action": "Undo",
+          "description": "Undo last navigation/change"
+        },
+        {
+          "keys": ["Ctrl/Cmd", "Shift", "Z"],
+          "action": "Redo",
+          "description": "Redo undone action"
+        },
+        {
+          "keys": ["Ctrl/Cmd", "Y"],
+          "action": "Redo",
+          "description": "Alternative redo shortcut"
+        },
+        {
+          "keys": ["Backspace"],
+          "action": "Go back",
+          "description": "Return to previous location"
+        }
+      ]
+    },
+    
+    "export": {
+      "name": "Export & Share",
+      "description": "Saving and sharing controls",
+      "shortcuts": [
+        {
+          "keys": ["Ctrl/Cmd", "S"],
+          "action": "Save image",
+          "description": "Export current view as PNG"
+        },
+        {
+          "keys": ["Ctrl/Cmd", "Shift", "S"],
+          "action": "Save high-res",
+          "description": "Export high-resolution image"
+        },
+        {
+          "keys": ["Ctrl/Cmd", "E"],
+          "action": "Export settings",
+          "description": "Open export dialog"
+        },
+        {
+          "keys": ["Ctrl/Cmd", "L"],
+          "action": "Copy link",
+          "description": "Copy shareable URL to clipboard"
+        }
+      ]
+    },
+    
+    "animation": {
+      "name": "Animation",
+      "description": "Animation recording and playback",
+      "shortcuts": [
+        {
+          "keys": ["Space"],
+          "action": "Play/Pause",
+          "description": "Toggle animation playback"
+        },
+        {
+          "keys": ["K"],
+          "action": "Add keyframe",
+          "description": "Add keyframe at current position"
+        },
+        {
+          "keys": ["Shift", "K"],
+          "action": "Remove keyframe",
+          "description": "Remove nearest keyframe"
+        },
+        {
+          "keys": ["<"],
+          "action": "Previous keyframe",
+          "description": "Jump to previous keyframe"
+        },
+        {
+          "keys": [">"],
+          "action": "Next keyframe",
+          "description": "Jump to next keyframe"
+        },
+        {
+          "keys": ["Ctrl/Cmd", "R"],
+          "action": "Record",
+          "description": "Start/stop recording"
+        }
+      ]
+    },
+    
+    "julia": {
+      "name": "Julia Controls",
+      "description": "Julia set specific controls",
+      "shortcuts": [
+        {
+          "keys": ["J"],
+          "action": "Julia mode",
+          "description": "Toggle Julia explorer mode"
+        },
+        {
+          "keys": ["Shift", "J"],
+          "action": "Copy Julia c",
+          "description": "Copy current c value for Julia"
+        }
+      ]
+    },
+    
+    "view3d": {
+      "name": "3D Controls",
+      "description": "3D fractal navigation",
+      "shortcuts": [
+        {
+          "keys": ["W", "A", "S", "D"],
+          "action": "Move camera",
+          "description": "WASD camera movement"
+        },
+        {
+          "keys": ["Q", "E"],
+          "action": "Roll camera",
+          "description": "Roll camera left/right"
+        },
+        {
+          "keys": ["Right-drag"],
+          "action": "Rotate view",
+          "description": "Rotate camera around target"
+        },
+        {
+          "keys": ["Middle-drag"],
+          "action": "Pan camera",
+          "description": "Pan camera position"
+        }
+      ]
+    }
+  },
+  
+  "modifierKeys": {
+    "ctrl": "Control key (Ctrl on Windows/Linux, Cmd on Mac)",
+    "shift": "Shift key for alternate actions",
+    "alt": "Alt/Option key for additional modifiers"
+  },
+  
+  "notes": [
+    "On Mac, use Cmd instead of Ctrl for most shortcuts",
+    "Shortcuts can be customized in Settings",
+    "Some shortcuts may conflict with browser defaults in web version"
+  ]
+}

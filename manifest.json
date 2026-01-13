@@ -1,0 +1,171 @@
+{
+  "name": "Abyss Explorer",
+  "short_name": "AbyssExplorer",
+  "description": "The Ultimate Browser-Based Fractal Navigator — Explore infinite mathematical beauty with ultra-deep zooming",
+  "version": "1.0.0",
+  "start_url": "/index.html",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#0a0a0f",
+  "theme_color": "#6366f1",
+  "lang": "en-US",
+  "dir": "ltr",
+  
+  "icons": [
+    {
+      "src": "assets/icons/logo.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "assets/icons/logo.svg",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    },
+    {
+      "src": "assets/icons/logo.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  
+  "screenshots": [
+    {
+      "src": "assets/images/screenshot-mandelbrot.png",
+      "sizes": "1920x1080",
+      "type": "image/png",
+      "label": "Mandelbrot set exploration"
+    },
+    {
+      "src": "assets/images/screenshot-3d.png",
+      "sizes": "1920x1080",
+      "type": "image/png",
+      "label": "3D Mandelbulb rendering"
+    }
+  ],
+  
+  "categories": [
+    "education",
+    "entertainment",
+    "graphics",
+    "utilities"
+  ],
+  
+  "shortcuts": [
+    {
+      "name": "New Exploration",
+      "short_name": "New",
+      "description": "Start a new fractal exploration",
+      "url": "/index.html?reset=true",
+      "icons": [
+        {
+          "src": "assets/icons/compass.svg",
+          "sizes": "96x96"
+        }
+      ]
+    },
+    {
+      "name": "Mandelbrot",
+      "short_name": "Mandelbrot",
+      "description": "Explore the Mandelbrot set",
+      "url": "/index.html?fractal=mandelbrot",
+      "icons": [
+        {
+          "src": "assets/icons/mandelbrot.svg",
+          "sizes": "96x96"
+        }
+      ]
+    },
+    {
+      "name": "3D Mode",
+      "short_name": "3D",
+      "description": "Explore 3D fractals",
+      "url": "/index.html?mode=3d&fractal=mandelbulb",
+      "icons": [
+        {
+          "src": "assets/icons/mandelbulb.svg",
+          "sizes": "96x96"
+        }
+      ]
+    },
+    {
+      "name": "Presets",
+      "short_name": "Presets",
+      "description": "Browse fractal presets",
+      "url": "/index.html?panel=presets",
+      "icons": [
+        {
+          "src": "assets/icons/bookmark.svg",
+          "sizes": "96x96"
+        }
+      ]
+    }
+  ],
+  
+  "related_applications": [],
+  "prefer_related_applications": false,
+  
+  "share_target": {
+    "action": "/index.html",
+    "method": "GET",
+    "params": {
+      "title": "name",
+      "text": "description",
+      "url": "location"
+    }
+  },
+  
+  "handle_links": "preferred",
+  
+  "launch_handler": {
+    "client_mode": "navigate-existing"
+  },
+  
+  "edge_side_panel": {
+    "preferred_width": 400
+  },
+  
+  "display_override": [
+    "window-controls-overlay",
+    "standalone",
+    "browser"
+  ],
+  
+  "protocol_handlers": [
+    {
+      "protocol": "web+fractal",
+      "url": "/index.html?location=%s"
+    }
+  ],
+  
+  "file_handlers": [
+    {
+      "action": "/index.html",
+      "accept": {
+        "application/json": [".abyss", ".fractal", ".preset"]
+      }
+    }
+  ],
+  
+  "serviceworker": {
+    "src": "sw.js",
+    "scope": "/",
+    "type": "module"
+  },
+  
+  "permissions_policy": {
+    "accelerometer": ["self"],
+    "gyroscope": ["self"],
+    "magnetometer": ["self"],
+    "fullscreen": ["self"],
+    "web-share": ["self"]
+  },
+  
+  "iarc_rating_id": "",
+  
+  "note": "Abyss Explorer - Dive into infinite mathematical beauty"
+}

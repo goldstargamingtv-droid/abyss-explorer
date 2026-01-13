@@ -1,0 +1,355 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Famous Fractal Locations",
+  "description": "Curated collection of mathematically significant and visually stunning fractal coordinates",
+  "version": "1.0.0",
+  "lastUpdated": "2024-01-01",
+  
+  "categories": {
+    "mathematical": "Locations with mathematical significance",
+    "visual": "Visually striking locations",
+    "deep-zoom": "Extremely deep zoom locations",
+    "spiral": "Spiral and tendril structures",
+    "minibrot": "Miniature Mandelbrot copies",
+    "seahorse": "Seahorse valley locations",
+    "elephant": "Elephant valley locations"
+  },
+  
+  "locations": [
+    {
+      "id": "seahorse-valley-classic",
+      "name": "Seahorse Valley",
+      "description": "The iconic seahorse valley, featuring spiral structures and infinite detail",
+      "category": "seahorse",
+      "fractalType": "mandelbrot",
+      "coordinates": {
+        "centerX": "-0.7463",
+        "centerY": "0.1102",
+        "zoom": "500"
+      },
+      "maxIterations": 500,
+      "thumbnail": "seahorse-valley.webp",
+      "tags": ["spiral", "classic", "beginner"],
+      "difficulty": "beginner",
+      "discoveredBy": "Benoit Mandelbrot"
+    },
+    {
+      "id": "elephant-valley",
+      "name": "Elephant Valley",
+      "description": "The larger valley on the negative real axis with elephant-trunk-like spirals",
+      "category": "elephant",
+      "fractalType": "mandelbrot",
+      "coordinates": {
+        "centerX": "0.2815",
+        "centerY": "-0.5302",
+        "zoom": "800"
+      },
+      "maxIterations": 500,
+      "thumbnail": "elephant-valley.webp",
+      "tags": ["spiral", "classic", "trunk"],
+      "difficulty": "beginner"
+    },
+    {
+      "id": "double-spiral-valley",
+      "name": "Double Spiral Valley",
+      "description": "A stunning double spiral formation at the cusp of the cardioid",
+      "category": "spiral",
+      "fractalType": "mandelbrot",
+      "coordinates": {
+        "centerX": "-0.749975",
+        "centerY": "0.006",
+        "zoom": "50000"
+      },
+      "maxIterations": 1000,
+      "thumbnail": "double-spiral.webp",
+      "tags": ["spiral", "double", "symmetry"],
+      "difficulty": "intermediate"
+    },
+    {
+      "id": "minibrot-standard",
+      "name": "Classic Minibrot",
+      "description": "A miniature copy of the entire Mandelbrot set deep within the fractal",
+      "category": "minibrot",
+      "fractalType": "mandelbrot",
+      "coordinates": {
+        "centerX": "-1.9854242533473791",
+        "centerY": "0.0000000000001",
+        "zoom": "1e13"
+      },
+      "maxIterations": 5000,
+      "thumbnail": "minibrot-standard.webp",
+      "tags": ["minibrot", "self-similarity", "deep"],
+      "difficulty": "advanced",
+      "notes": "Requires perturbation theory for accurate rendering"
+    },
+    {
+      "id": "feigenbaum-point",
+      "name": "Feigenbaum Point",
+      "description": "The accumulation point of period-doubling cascade, where chaos begins",
+      "category": "mathematical",
+      "fractalType": "mandelbrot",
+      "coordinates": {
+        "centerX": "-1.401155",
+        "centerY": "0",
+        "zoom": "100"
+      },
+      "maxIterations": 300,
+      "thumbnail": "feigenbaum.webp",
+      "tags": ["chaos", "bifurcation", "mathematical"],
+      "difficulty": "intermediate",
+      "mathematicalSignificance": "The Feigenbaum constant δ ≈ 4.669 governs the rate of period doubling",
+      "discoveredBy": "Mitchell Feigenbaum"
+    },
+    {
+      "id": "misiurewicz-point-m1",
+      "name": "Misiurewicz Point M1",
+      "description": "A pre-periodic point where the critical orbit eventually becomes periodic",
+      "category": "mathematical",
+      "fractalType": "mandelbrot",
+      "coordinates": {
+        "centerX": "-0.10109636384562218",
+        "centerY": "0.9562865108091414",
+        "zoom": "1e6"
+      },
+      "maxIterations": 2000,
+      "thumbnail": "misiurewicz-m1.webp",
+      "tags": ["misiurewicz", "preperiodic", "mathematical"],
+      "difficulty": "advanced"
+    },
+    {
+      "id": "dendrite-tip",
+      "name": "Dendrite Tip",
+      "description": "The tip of a dendrite antenna, showing infinite branching",
+      "category": "visual",
+      "fractalType": "mandelbrot",
+      "coordinates": {
+        "centerX": "-0.1",
+        "centerY": "0.8255",
+        "zoom": "5000"
+      },
+      "maxIterations": 800,
+      "thumbnail": "dendrite-tip.webp",
+      "tags": ["dendrite", "branching", "tree"],
+      "difficulty": "intermediate"
+    },
+    {
+      "id": "triple-spiral",
+      "name": "Triple Spiral",
+      "description": "A rare triple spiral formation with 3-fold rotational symmetry",
+      "category": "spiral",
+      "fractalType": "mandelbrot",
+      "coordinates": {
+        "centerX": "-0.156520166833755",
+        "centerY": "1.032247108922832",
+        "zoom": "1e7"
+      },
+      "maxIterations": 2000,
+      "thumbnail": "triple-spiral.webp",
+      "tags": ["spiral", "symmetry", "rare"],
+      "difficulty": "advanced"
+    },
+    {
+      "id": "julia-dendrite",
+      "name": "Julia Dendrite",
+      "description": "The Julia set for c = i, forming a perfect dendrite",
+      "category": "mathematical",
+      "fractalType": "julia",
+      "coordinates": {
+        "centerX": "0",
+        "centerY": "0",
+        "zoom": "1"
+      },
+      "juliaC": [0, 1],
+      "maxIterations": 300,
+      "thumbnail": "julia-dendrite.webp",
+      "tags": ["julia", "dendrite", "connected"],
+      "difficulty": "beginner",
+      "mathematicalSignificance": "c = i is on the boundary of the Mandelbrot set"
+    },
+    {
+      "id": "julia-dragon",
+      "name": "Julia Dragon",
+      "description": "Dragon-like Julia set with intricate spiral patterns",
+      "category": "visual",
+      "fractalType": "julia",
+      "coordinates": {
+        "centerX": "0",
+        "centerY": "0",
+        "zoom": "1"
+      },
+      "juliaC": [-0.8, 0.156],
+      "maxIterations": 500,
+      "thumbnail": "julia-dragon.webp",
+      "tags": ["julia", "dragon", "spiral"],
+      "difficulty": "beginner"
+    },
+    {
+      "id": "julia-siegel-disk",
+      "name": "Siegel Disk Julia",
+      "description": "Julia set containing a Siegel disk with golden ratio rotation",
+      "category": "mathematical",
+      "fractalType": "julia",
+      "coordinates": {
+        "centerX": "0",
+        "centerY": "0",
+        "zoom": "2"
+      },
+      "juliaC": [-0.39054, -0.58679],
+      "maxIterations": 1000,
+      "thumbnail": "siegel-disk.webp",
+      "tags": ["julia", "siegel", "golden-ratio"],
+      "difficulty": "advanced",
+      "mathematicalSignificance": "Contains an invariant Siegel disk with irrational rotation"
+    },
+    {
+      "id": "burning-ship-eye",
+      "name": "Burning Ship Eye",
+      "description": "The distinctive 'eye' of the Burning Ship fractal",
+      "category": "visual",
+      "fractalType": "burning-ship",
+      "coordinates": {
+        "centerX": "-1.755",
+        "centerY": "-0.025",
+        "zoom": "15"
+      },
+      "maxIterations": 500,
+      "thumbnail": "burning-ship-eye.webp",
+      "tags": ["burning-ship", "eye", "ship"],
+      "difficulty": "beginner"
+    },
+    {
+      "id": "burning-ship-armada",
+      "name": "Burning Ship Armada",
+      "description": "Fleet of smaller ships within the Burning Ship fractal",
+      "category": "visual",
+      "fractalType": "burning-ship",
+      "coordinates": {
+        "centerX": "-1.861",
+        "centerY": "-0.0003",
+        "zoom": "500"
+      },
+      "maxIterations": 1000,
+      "thumbnail": "burning-ship-armada.webp",
+      "tags": ["burning-ship", "fleet", "miniships"],
+      "difficulty": "intermediate"
+    },
+    {
+      "id": "newton-basins-z3",
+      "name": "Newton z³-1 Basins",
+      "description": "Classic Newton fractal for z³-1 showing the three basins of attraction",
+      "category": "mathematical",
+      "fractalType": "newton",
+      "coordinates": {
+        "centerX": "0",
+        "centerY": "0",
+        "zoom": "1"
+      },
+      "polynomial": "z^3 - 1",
+      "maxIterations": 100,
+      "thumbnail": "newton-z3.webp",
+      "tags": ["newton", "basins", "roots"],
+      "difficulty": "beginner",
+      "mathematicalSignificance": "Demonstrates Newton's method convergence"
+    },
+    {
+      "id": "newton-z8",
+      "name": "Newton z⁸-1 Symmetry",
+      "description": "Eight-fold symmetric Newton fractal",
+      "category": "visual",
+      "fractalType": "newton",
+      "coordinates": {
+        "centerX": "0",
+        "centerY": "0",
+        "zoom": "1"
+      },
+      "polynomial": "z^8 - 1",
+      "maxIterations": 100,
+      "thumbnail": "newton-z8.webp",
+      "tags": ["newton", "symmetry", "octagonal"],
+      "difficulty": "beginner"
+    },
+    {
+      "id": "tricorn-tip",
+      "name": "Tricorn Tip",
+      "description": "The sharp tip of the Tricorn (Mandelbar) fractal",
+      "category": "visual",
+      "fractalType": "tricorn",
+      "coordinates": {
+        "centerX": "0.85",
+        "centerY": "0",
+        "zoom": "20"
+      },
+      "maxIterations": 500,
+      "thumbnail": "tricorn-tip.webp",
+      "tags": ["tricorn", "mandelbar", "tip"],
+      "difficulty": "beginner"
+    },
+    {
+      "id": "deep-zoom-spiral",
+      "name": "Deep Spiral",
+      "description": "Ultra-deep zoom into a spiral formation",
+      "category": "deep-zoom",
+      "fractalType": "mandelbrot",
+      "coordinates": {
+        "centerX": "-0.7453052295022784088",
+        "centerY": "0.11304560323706883",
+        "zoom": "1e14"
+      },
+      "maxIterations": 10000,
+      "thumbnail": "deep-spiral.webp",
+      "tags": ["deep", "spiral", "ultra"],
+      "difficulty": "expert",
+      "notes": "Requires extended precision arithmetic"
+    },
+    {
+      "id": "budding-fractal",
+      "name": "Infinite Budding",
+      "description": "Infinite cascade of period-2 bulbs along the real axis",
+      "category": "mathematical",
+      "fractalType": "mandelbrot",
+      "coordinates": {
+        "centerX": "-1.25066",
+        "centerY": "0.02012",
+        "zoom": "10000"
+      },
+      "maxIterations": 2000,
+      "thumbnail": "budding.webp",
+      "tags": ["buds", "period", "cascade"],
+      "difficulty": "intermediate"
+    },
+    {
+      "id": "satellite-julia",
+      "name": "Satellite Julia",
+      "description": "Julia set from a satellite minibrot showing remarkable detail",
+      "category": "visual",
+      "fractalType": "julia",
+      "coordinates": {
+        "centerX": "0",
+        "centerY": "0",
+        "zoom": "1"
+      },
+      "juliaC": [-0.1011, 0.9563],
+      "maxIterations": 800,
+      "thumbnail": "satellite-julia.webp",
+      "tags": ["julia", "satellite", "detail"],
+      "difficulty": "intermediate"
+    }
+  ],
+  
+  "metadata": {
+    "totalLocations": 20,
+    "fractalsRepresented": ["mandelbrot", "julia", "burning-ship", "newton", "tricorn"],
+    "zoomRanges": {
+      "beginner": "1 - 1000",
+      "intermediate": "1000 - 1e8",
+      "advanced": "1e8 - 1e13",
+      "expert": "1e13+"
+    },
+    "credits": [
+      "Benoit Mandelbrot - Discoverer of the Mandelbrot set",
+      "Adrien Douady - Named the Mandelbrot set",
+      "John Hubbard - Mathematical analysis",
+      "Mitchell Feigenbaum - Period doubling research"
+    ]
+  }
+}

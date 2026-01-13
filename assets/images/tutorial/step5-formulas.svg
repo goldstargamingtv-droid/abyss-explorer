@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Tutorial Step 5: Custom Formulas
+  Creating your own fractals with custom mathematics
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600">
+  <defs>
+    <linearGradient id="bg5" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1a1a2e"/>
+      <stop offset="100%" stop-color="#16213e"/>
+    </linearGradient>
+  </defs>
+  
+  <!-- Background -->
+  <rect width="800" height="600" fill="url(#bg5)"/>
+  
+  <!-- Title -->
+  <text x="400" y="50" font-family="Arial, sans-serif" font-size="32" fill="#ffffff" text-anchor="middle" font-weight="bold">
+    Step 5: Custom Formulas
+  </text>
+  
+  <!-- Formula editor mockup -->
+  <rect x="100" y="90" width="350" height="250" rx="10" fill="#0f0f1a" stroke="#4a00e0" stroke-width="2"/>
+  <text x="275" y="120" font-family="Arial, sans-serif" font-size="16" fill="#4a00e0" text-anchor="middle" font-weight="bold">
+    FORMULA EDITOR
+  </text>
+  
+  <!-- Code editor area -->
+  <rect x="120" y="140" width="310" height="80" rx="5" fill="#000000"/>
+  <text x="130" y="165" font-family="monospace" font-size="14" fill="#ff6b6b">z</text>
+  <text x="145" y="165" font-family="monospace" font-size="14" fill="#ffffff"> = </text>
+  <text x="168" y="165" font-family="monospace" font-size="14" fill="#ff6b6b">z</text>
+  <text x="180" y="165" font-family="monospace" font-size="14" fill="#ffffff">^</text>
+  <text x="190" y="165" font-family="monospace" font-size="14" fill="#00d4ff">3</text>
+  <text x="205" y="165" font-family="monospace" font-size="14" fill="#ffffff"> + </text>
+  <text x="230" y="165" font-family="monospace" font-size="14" fill="#ff6b6b">c</text>
+  <text x="250" y="165" font-family="monospace" font-size="14" fill="#ffffff"> * </text>
+  <text x="275" y="165" font-family="monospace" font-size="14" fill="#8e2de2">sin</text>
+  <text x="302" y="165" font-family="monospace" font-size="14" fill="#ffffff">(</text>
+  <text x="310" y="165" font-family="monospace" font-size="14" fill="#ff6b6b">z</text>
+  <text x="325" y="165" font-family="monospace" font-size="14" fill="#ffffff">)</text>
+  
+  <text x="130" y="200" font-family="monospace" font-size="12" fill="#666666">// Try: z^n + c, z*sin(z), z^2 + c*z</text>
+  
+  <!-- Variable reference -->
+  <g transform="translate(120, 240)">
+    <text x="0" y="0" font-family="Arial, sans-serif" font-size="12" fill="#888888">Variables:</text>
+    <text x="0" y="20" font-family="monospace" font-size="12" fill="#ff6b6b">z</text>
+    <text x="15" y="20" font-family="Arial, sans-serif" font-size="12" fill="#666666">- current value</text>
+    <text x="110" y="20" font-family="monospace" font-size="12" fill="#ff6b6b">c</text>
+    <text x="125" y="20" font-family="Arial, sans-serif" font-size="12" fill="#666666">- pixel coordinate</text>
+    <text x="0" y="40" font-family="monospace" font-size="12" fill="#00d4ff">n</text>
+    <text x="15" y="40" font-family="Arial, sans-serif" font-size="12" fill="#666666">- iteration</text>
+    <text x="110" y="40" font-family="monospace" font-size="12" fill="#00d4ff">i</text>
+    <text x="125" y="40" font-family="Arial, sans-serif" font-size="12" fill="#666666">- imaginary unit</text>
+  </g>
+  
+  <!-- Function reference -->
+  <rect x="480" y="90" width="280" height="250" rx="10" fill="#0f0f1a" stroke="#333333"/>
+  <text x="620" y="120" font-family="Arial, sans-serif" font-size="16" fill="#888888" text-anchor="middle">
+    Available Functions
+  </text>
+  
+  <g transform="translate(500, 140)">
+    <text x="0" y="0" font-family="monospace" font-size="13" fill="#8e2de2">sin(z)</text>
+    <text x="80" y="0" font-family="Arial, sans-serif" font-size="12" fill="#666666">- sine</text>
+    
+    <text x="0" y="25" font-family="monospace" font-size="13" fill="#8e2de2">cos(z)</text>
+    <text x="80" y="25" font-family="Arial, sans-serif" font-size="12" fill="#666666">- cosine</text>
+    
+    <text x="0" y="50" font-family="monospace" font-size="13" fill="#8e2de2">exp(z)</text>
+    <text x="80" y="50" font-family="Arial, sans-serif" font-size="12" fill="#666666">- exponential</text>
+    
+    <text x="0" y="75" font-family="monospace" font-size="13" fill="#8e2de2">log(z)</text>
+    <text x="80" y="75" font-family="Arial, sans-serif" font-size="12" fill="#666666">- natural log</text>
+    
+    <text x="0" y="100" font-family="monospace" font-size="13" fill="#8e2de2">sqrt(z)</text>
+    <text x="80" y="100" font-family="Arial, sans-serif" font-size="12" fill="#666666">- square root</text>
+    
+    <text x="0" y="125" font-family="monospace" font-size="13" fill="#8e2de2">abs(z)</text>
+    <text x="80" y="125" font-family="Arial, sans-serif" font-size="12" fill="#666666">- absolute value</text>
+    
+    <text x="0" y="150" font-family="monospace" font-size="13" fill="#8e2de2">conj(z)</text>
+    <text x="80" y="150" font-family="Arial, sans-serif" font-size="12" fill="#666666">- conjugate</text>
+    
+    <text x="0" y="175" font-family="monospace" font-size="13" fill="#8e2de2">re(z), im(z)</text>
+    <text x="100" y="175" font-family="Arial, sans-serif" font-size="12" fill="#666666">- real/imag</text>
+  </g>
+  
+  <!-- Examples section -->
+  <text x="400" y="380" font-family="Arial, sans-serif" font-size="18" fill="#ffffff" text-anchor="middle" font-weight="bold">
+    Example Formulas
+  </text>
+  
+  <g transform="translate(100, 410)">
+    <rect x="0" y="0" width="180" height="70" rx="5" fill="#1a1a2e" stroke="#4a00e0" stroke-width="1"/>
+    <text x="90" y="25" font-family="monospace" font-size="14" fill="#ffffff" text-anchor="middle">z³ + c</text>
+    <text x="90" y="50" font-family="Arial, sans-serif" font-size="12" fill="#888888" text-anchor="middle">Cubic Mandelbrot</text>
+  </g>
+  
+  <g transform="translate(310, 410)">
+    <rect x="0" y="0" width="180" height="70" rx="5" fill="#1a1a2e" stroke="#00d4ff" stroke-width="1"/>
+    <text x="90" y="25" font-family="monospace" font-size="14" fill="#ffffff" text-anchor="middle">z² + c/z</text>
+    <text x="90" y="50" font-family="Arial, sans-serif" font-size="12" fill="#888888" text-anchor="middle">Rational variant</text>
+  </g>
+  
+  <g transform="translate(520, 410)">
+    <rect x="0" y="0" width="180" height="70" rx="5" fill="#1a1a2e" stroke="#8e2de2" stroke-width="1"/>
+    <text x="90" y="25" font-family="monospace" font-size="14" fill="#ffffff" text-anchor="middle">sin(z) + c</text>
+    <text x="90" y="50" font-family="Arial, sans-serif" font-size="12" fill="#888888" text-anchor="middle">Transcendental</text>
+  </g>
+  
+  <!-- Instructions -->
+  <text x="400" y="530" font-family="Arial, sans-serif" font-size="16" fill="#aaaaaa" text-anchor="middle">
+    Experiment with different formulas to discover unique fractals
+  </text>
+  <text x="400" y="560" font-family="Arial, sans-serif" font-size="14" fill="#666666" text-anchor="middle">
+    Press Apply to see your formula rendered in real-time
+  </text>
+</svg>
