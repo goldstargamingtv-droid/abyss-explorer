@@ -1,17 +1,16 @@
 /**
  * ═══════════════════════════════════════════════════════════════════════════
- * ABYSS EXPLORER - Main Application (Optimized)
+ * ABYSS EXPLORER - Main Application (WebGL Accelerated)
  * ═══════════════════════════════════════════════════════════════════════════
  */
 
 class App {
     constructor() {
         this.canvas = null;
-        this.ctx = null;
+        this.gl = null;
+        this.program = null;
         this.isInitialized = false;
-        this.isRendering = false;
-        this.renderAborted = false;
-        this.imageData = null;
+        this.animationFrame = null;
         
         // Fractal parameters
         this.params = {
@@ -20,135 +19,318 @@ class App {
             zoom: 1,
             maxIterations: 500,
             fractalType: 'mandelbrot',
-            palette: 'inferno',
+            colorOffset: 0,
             juliaC: { x: -0.7, y: 0.27015 }
         };
         
-        // Render settings
-        this.chunkSize = 50; // Rows per chunk
+        // History for undo/redo
+        this.history = [];
+        this.historyIndex = -1;
+        this.maxHistory = 50;
         
-        // Color palettes (pre-computed for speed)
-        this.paletteColors = null;
-        this.initPalettes();
+        // Bookmarks
+        this.bookmarks = this.loadBookmarks();
+        
+        console.log('[App] Constructor called');
     }
     
-    initPalettes() {
-        this.palettes = {
-            inferno: [[0,0,4],[22,11,57],[66,10,104],[106,23,110],[147,38,103],[186,54,85],[221,81,58],[243,118,27],[252,165,10],[246,215,70],[252,255,164]],
-            viridis: [[68,1,84],[72,35,116],[64,67,135],[52,94,141],[41,120,142],[32,144,140],[34,167,132],[68,190,112],[121,209,81],[189,222,38],[253,231,37]],
-            plasma: [[13,8,135],[65,4,157],[106,0,168],[143,13,163],[176,42,143],[203,71,119],[225,100,98],[242,132,75],[252,166,53],[252,206,37],[240,249,33]],
-            magma: [[0,0,4],[20,14,54],[56,15,99],[99,19,122],[142,33,124],[184,55,118],[222,84,108],[247,124,109],[254,170,129],[254,216,167],[252,253,191]],
-            ocean: [[0,0,32],[0,16,64],[0,48,96],[0,80,128],[0,112,160],[32,144,192],[80,176,208],[128,208,224],[176,232,240],[224,248,255]],
-            fire: [[0,0,0],[32,0,0],[64,0,0],[128,0,0],[192,32,0],[224,64,0],[255,128,0],[255,192,64],[255,224,128],[255,255,224]],
-            rainbow: [[255,0,0],[255,128,0],[255,255,0],[128,255,0],[0,255,0],[0,255,128],[0,255,255],[0,128,255],[0,0,255],[128,0,255],[255,0,255],[255,0,128]],
-            grayscale: [[0,0,0],[32,32,32],[64,64,64],[96,96,96],[128,128,128],[160,160,160],[192,192,192],[224,224,224],[255,255,255]]
-        };
-        
-        // Pre-compute expanded palette (256 colors for smooth gradients)
-        this.expandPalette('inferno');
+    // ═══════════════════════════════════════════════════════════════════════
+    // WEBGL SHADERS
+    // ═══════════════════════════════════════════════════════════════════════
+    
+    getVertexShader() {
+        return `
+            attribute vec2 a_position;
+            varying vec2 v_uv;
+            void main() {
+                v_uv = a_position * 0.5 + 0.5;
+                gl_Position = vec4(a_position, 0.0, 1.0);
+            }
+        `;
     }
     
-    expandPalette(name) {
-        const source = this.palettes[name] || this.palettes.inferno;
-        this.paletteColors = new Uint8Array(256 * 3);
-        
-        for (let i = 0; i < 256; i++) {
-            const t = i / 255 * (source.length - 1);
-            const idx = Math.floor(t);
-            const frac = t - idx;
-            const c1 = source[idx];
-            const c2 = source[Math.min(idx + 1, source.length - 1)];
+    getFragmentShader() {
+        return `
+            precision highp float;
+            varying vec2 v_uv;
             
-            this.paletteColors[i * 3] = Math.floor(c1[0] + (c2[0] - c1[0]) * frac);
-            this.paletteColors[i * 3 + 1] = Math.floor(c1[1] + (c2[1] - c1[1]) * frac);
-            this.paletteColors[i * 3 + 2] = Math.floor(c1[2] + (c2[2] - c1[2]) * frac);
-        }
+            uniform vec2 u_center;
+            uniform float u_zoom;
+            uniform float u_aspectRatio;
+            uniform int u_maxIter;
+            uniform int u_fractalType;
+            uniform float u_colorOffset;
+            uniform vec2 u_juliaC;
+            
+            vec3 palette(float t) {
+                // Inferno-like palette
+                vec3 a = vec3(0.0, 0.0, 0.02);
+                vec3 b = vec3(0.9, 0.3, 0.0);
+                vec3 c = vec3(1.0, 0.8, 0.2);
+                vec3 d = vec3(1.0, 1.0, 0.6);
+                
+                t = fract(t + u_colorOffset);
+                
+                if (t < 0.33) {
+                    return mix(a, b, t * 3.0);
+                } else if (t < 0.66) {
+                    return mix(b, c, (t - 0.33) * 3.0);
+                } else {
+                    return mix(c, d, (t - 0.66) * 3.0);
+                }
+            }
+            
+            void main() {
+                float scale = 4.0 / u_zoom;
+                float x0 = u_center.x + (v_uv.x - 0.5) * scale * u_aspectRatio;
+                float y0 = u_center.y + (v_uv.y - 0.5) * scale;
+                
+                float x = 0.0;
+                float y = 0.0;
+                int iter = 0;
+                
+                // Fractal type: 0=mandelbrot, 1=julia, 2=burningship, 3=tricorn
+                if (u_fractalType == 1) {
+                    // Julia
+                    x = x0;
+                    y = y0;
+                    for (int i = 0; i < 10000; i++) {
+                        if (i >= u_maxIter) break;
+                        if (x*x + y*y > 4.0) break;
+                        float xtemp = x*x - y*y + u_juliaC.x;
+                        y = 2.0*x*y + u_juliaC.y;
+                        x = xtemp;
+                        iter++;
+                    }
+                } else if (u_fractalType == 2) {
+                    // Burning Ship
+                    for (int i = 0; i < 10000; i++) {
+                        if (i >= u_maxIter) break;
+                        if (x*x + y*y > 4.0) break;
+                        float xtemp = x*x - y*y + x0;
+                        y = abs(2.0*x*y) + y0;
+                        x = xtemp;
+                        iter++;
+                    }
+                } else if (u_fractalType == 3) {
+                    // Tricorn
+                    for (int i = 0; i < 10000; i++) {
+                        if (i >= u_maxIter) break;
+                        if (x*x + y*y > 4.0) break;
+                        float xtemp = x*x - y*y + x0;
+                        y = -2.0*x*y + y0;
+                        x = xtemp;
+                        iter++;
+                    }
+                } else {
+                    // Mandelbrot (default)
+                    for (int i = 0; i < 10000; i++) {
+                        if (i >= u_maxIter) break;
+                        if (x*x + y*y > 4.0) break;
+                        float xtemp = x*x - y*y + x0;
+                        y = 2.0*x*y + y0;
+                        x = xtemp;
+                        iter++;
+                    }
+                }
+                
+                if (iter >= u_maxIter) {
+                    gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0);
+                } else {
+                    // Smooth coloring
+                    float smoothed = float(iter) + 1.0 - log2(log2(x*x + y*y + 1.0));
+                    float t = smoothed / 100.0;
+                    vec3 color = palette(t);
+                    gl_FragColor = vec4(color, 1.0);
+                }
+            }
+        `;
     }
+    
+    // ═══════════════════════════════════════════════════════════════════════
+    // INITIALIZATION
+    // ═══════════════════════════════════════════════════════════════════════
     
     async init() {
-        console.log('🌀 Abyss Explorer v1.0.0 initializing...');
+        console.log('[App] Initializing...');
+        this.updateLoadingStatus('Setting up WebGL...', 20);
         
         try {
+            // Get canvas
             this.canvas = document.getElementById('fractal-canvas-2d') || document.getElementById('fractal-canvas');
-            if (!this.canvas) throw new Error('Canvas element not found');
+            if (!this.canvas) throw new Error('Canvas not found');
+            console.log('[App] Canvas found:', this.canvas.id);
             
+            // Setup WebGL
+            this.updateLoadingStatus('Compiling shaders...', 40);
+            await this.setupWebGL();
+            console.log('[App] WebGL setup complete');
+            
+            // Setup canvas size
             this.setupCanvas();
+            
+            // Setup all event listeners
+            this.updateLoadingStatus('Setting up controls...', 60);
             this.setupEventListeners();
             this.setupUIControls();
+            console.log('[App] Event listeners attached');
             
-            // Show loading progress
-            this.updateLoadingStatus('Preparing render engine...', 50);
-            
-            // Small delay to let UI update
-            await new Promise(r => setTimeout(r, 100));
-            
-            this.updateLoadingStatus('Rendering initial view...', 70);
-            
-            // Render with progress updates
-            await this.render();
+            // Initial render
+            this.updateLoadingStatus('Rendering fractal...', 80);
+            this.saveToHistory();
+            this.render();
             
             this.isInitialized = true;
-            console.log('✅ Abyss Explorer initialized successfully!');
+            console.log('[App] ✅ Initialization complete!');
             
             this.updateLoadingStatus('Ready!', 100);
-            await new Promise(r => setTimeout(r, 300));
-            
+            await this.delay(300);
             this.hideLoadingScreen();
             
         } catch (error) {
-            console.error('❌ Initialization failed:', error);
+            console.error('[App] ❌ Init failed:', error);
             this.showError(error.message);
         }
     }
     
-    updateLoadingStatus(message, progress) {
+    delay(ms) {
+        return new Promise(r => setTimeout(r, ms));
+    }
+    
+    updateLoadingStatus(msg, pct) {
         const status = document.getElementById('loading-status');
         const bar = document.getElementById('loading-progress-bar');
-        if (status) status.textContent = message;
-        if (bar) bar.style.width = `${progress}%`;
+        if (status) status.textContent = msg;
+        if (bar) bar.style.width = pct + '%';
+    }
+    
+    async setupWebGL() {
+        this.gl = this.canvas.getContext('webgl') || this.canvas.getContext('experimental-webgl');
+        if (!this.gl) throw new Error('WebGL not supported');
+        
+        const gl = this.gl;
+        
+        // Compile shaders
+        const vs = this.compileShader(gl.VERTEX_SHADER, this.getVertexShader());
+        const fs = this.compileShader(gl.FRAGMENT_SHADER, this.getFragmentShader());
+        
+        // Create program
+        this.program = gl.createProgram();
+        gl.attachShader(this.program, vs);
+        gl.attachShader(this.program, fs);
+        gl.linkProgram(this.program);
+        
+        if (!gl.getProgramParameter(this.program, gl.LINK_STATUS)) {
+            throw new Error('Shader program failed: ' + gl.getProgramInfoLog(this.program));
+        }
+        
+        // Create fullscreen quad
+        const vertices = new Float32Array([-1,-1, 1,-1, -1,1, 1,1]);
+        const buffer = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+        gl.bufferData(gl.ARRAY_BUFFER, vertices, gl.STATIC_DRAW);
+        
+        // Setup attribute
+        const posLoc = gl.getAttribLocation(this.program, 'a_position');
+        gl.enableVertexAttribArray(posLoc);
+        gl.vertexAttribPointer(posLoc, 2, gl.FLOAT, false, 0, 0);
+        
+        // Get uniform locations
+        this.uniforms = {
+            center: gl.getUniformLocation(this.program, 'u_center'),
+            zoom: gl.getUniformLocation(this.program, 'u_zoom'),
+            aspectRatio: gl.getUniformLocation(this.program, 'u_aspectRatio'),
+            maxIter: gl.getUniformLocation(this.program, 'u_maxIter'),
+            fractalType: gl.getUniformLocation(this.program, 'u_fractalType'),
+            colorOffset: gl.getUniformLocation(this.program, 'u_colorOffset'),
+            juliaC: gl.getUniformLocation(this.program, 'u_juliaC')
+        };
+    }
+    
+    compileShader(type, source) {
+        const gl = this.gl;
+        const shader = gl.createShader(type);
+        gl.shaderSource(shader, source);
+        gl.compileShader(shader);
+        
+        if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+            const error = gl.getShaderInfoLog(shader);
+            gl.deleteShader(shader);
+            throw new Error('Shader compile error: ' + error);
+        }
+        return shader;
     }
     
     setupCanvas() {
         const resize = () => {
-            // Use 1:1 pixel ratio for performance
-            const rect = this.canvas.parentElement?.getBoundingClientRect() || { width: window.innerWidth, height: window.innerHeight };
-            
+            const rect = this.canvas.parentElement?.getBoundingClientRect() || 
+                        { width: window.innerWidth, height: window.innerHeight };
             this.canvas.width = Math.floor(rect.width);
             this.canvas.height = Math.floor(rect.height);
             this.canvas.style.width = rect.width + 'px';
             this.canvas.style.height = rect.height + 'px';
             
+            if (this.gl) {
+                this.gl.viewport(0, 0, this.canvas.width, this.canvas.height);
+            }
             if (this.isInitialized) {
                 this.render();
             }
         };
         
         resize();
-        let resizeTimeout;
+        let timeout;
         window.addEventListener('resize', () => {
-            clearTimeout(resizeTimeout);
-            resizeTimeout = setTimeout(resize, 150);
+            clearTimeout(timeout);
+            timeout = setTimeout(resize, 100);
         });
-        
-        this.ctx = this.canvas.getContext('2d', { alpha: false });
-        this.ctx.imageSmoothingEnabled = false;
     }
+    
+    // ═══════════════════════════════════════════════════════════════════════
+    // RENDERING
+    // ═══════════════════════════════════════════════════════════════════════
+    
+    render() {
+        const gl = this.gl;
+        if (!gl || !this.program) return;
+        
+        const startTime = performance.now();
+        
+        gl.useProgram(this.program);
+        
+        // Set uniforms
+        gl.uniform2f(this.uniforms.center, this.params.centerX, this.params.centerY);
+        gl.uniform1f(this.uniforms.zoom, this.params.zoom);
+        gl.uniform1f(this.uniforms.aspectRatio, this.canvas.width / this.canvas.height);
+        gl.uniform1i(this.uniforms.maxIter, this.params.maxIterations);
+        gl.uniform1f(this.uniforms.colorOffset, this.params.colorOffset);
+        gl.uniform2f(this.uniforms.juliaC, this.params.juliaC.x, this.params.juliaC.y);
+        
+        // Fractal type
+        const types = { mandelbrot: 0, julia: 1, burningship: 2, 'burning-ship': 2, tricorn: 3 };
+        gl.uniform1i(this.uniforms.fractalType, types[this.params.fractalType] || 0);
+        
+        // Draw
+        gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+        
+        const elapsed = performance.now() - startTime;
+        this.updatePerformance(elapsed);
+        this.updateInfo();
+    }
+    
+    // ═══════════════════════════════════════════════════════════════════════
+    // EVENT LISTENERS
+    // ═══════════════════════════════════════════════════════════════════════
     
     setupEventListeners() {
         let isDragging = false;
         let lastX, lastY;
-        let lastRenderTime = 0;
-        const throttleMs = 50; // Throttle during interactions
         
         // Mouse wheel zoom
         this.canvas.addEventListener('wheel', (e) => {
             e.preventDefault();
-            const now = Date.now();
-            if (now - lastRenderTime < throttleMs) return;
-            lastRenderTime = now;
-            
-            const zoomFactor = e.deltaY > 0 ? 0.75 : 1.33;
-            this.zoom(zoomFactor, e.clientX, e.clientY);
+            const factor = e.deltaY > 0 ? 0.75 : 1.33;
+            this.zoomAt(factor, e.clientX, e.clientY);
         }, { passive: false });
         
         // Mouse drag
@@ -161,14 +343,7 @@ class App {
         
         document.addEventListener('mousemove', (e) => {
             if (!isDragging) return;
-            
-            const now = Date.now();
-            if (now - lastRenderTime < throttleMs) return;
-            lastRenderTime = now;
-            
-            const dx = e.clientX - lastX;
-            const dy = e.clientY - lastY;
-            this.pan(dx, dy);
+            this.pan(e.clientX - lastX, e.clientY - lastY);
             lastX = e.clientX;
             lastY = e.clientY;
         });
@@ -177,14 +352,14 @@ class App {
             if (isDragging) {
                 isDragging = false;
                 this.canvas.style.cursor = 'crosshair';
-                // Full quality render after drag
-                this.render();
+                this.saveToHistory();
             }
         });
         
         // Double click zoom
         this.canvas.addEventListener('dblclick', (e) => {
-            this.zoom(3, e.clientX, e.clientY);
+            this.zoomAt(3, e.clientX, e.clientY);
+            this.saveToHistory();
         });
         
         // Keyboard
@@ -196,8 +371,6 @@ class App {
     
     setupTouchEvents() {
         let lastDist = 0, lastX = 0, lastY = 0, touching = false;
-        let lastRenderTime = 0;
-        const throttleMs = 50;
         
         this.canvas.addEventListener('touchstart', (e) => {
             e.preventDefault();
@@ -217,14 +390,8 @@ class App {
             e.preventDefault();
             if (!touching) return;
             
-            const now = Date.now();
-            if (now - lastRenderTime < throttleMs) return;
-            lastRenderTime = now;
-            
             if (e.touches.length === 1) {
-                const dx = e.touches[0].clientX - lastX;
-                const dy = e.touches[0].clientY - lastY;
-                this.pan(dx, dy);
+                this.pan(e.touches[0].clientX - lastX, e.touches[0].clientY - lastY);
                 lastX = e.touches[0].clientX;
                 lastY = e.touches[0].clientY;
             } else if (e.touches.length === 2) {
@@ -235,7 +402,7 @@ class App {
                 if (lastDist > 0) {
                     const cx = (e.touches[0].clientX + e.touches[1].clientX) / 2;
                     const cy = (e.touches[0].clientY + e.touches[1].clientY) / 2;
-                    this.zoom(dist / lastDist, cx, cy);
+                    this.zoomAt(dist / lastDist, cx, cy);
                 }
                 lastDist = dist;
             }
@@ -244,92 +411,192 @@ class App {
         this.canvas.addEventListener('touchend', () => {
             touching = false;
             lastDist = 0;
-            this.render(); // Full quality
+            this.saveToHistory();
         });
     }
     
     handleKeyboard(e) {
         if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
         
-        switch (e.key.toLowerCase()) {
+        const key = e.key.toLowerCase();
+        
+        switch (key) {
             case 'r': case ' ': e.preventDefault(); this.reset(); break;
-            case '+': case '=': this.zoom(1.5); break;
-            case '-': case '_': this.zoom(0.67); break;
-            case 'arrowup': e.preventDefault(); this.pan(0, 100); break;
-            case 'arrowdown': e.preventDefault(); this.pan(0, -100); break;
-            case 'arrowleft': e.preventDefault(); this.pan(100, 0); break;
-            case 'arrowright': e.preventDefault(); this.pan(-100, 0); break;
-            case 's': if (e.ctrlKey || e.metaKey) { e.preventDefault(); this.exportImage(); } break;
+            case '+': case '=': this.zoomAt(1.5); this.saveToHistory(); break;
+            case '-': case '_': this.zoomAt(0.67); this.saveToHistory(); break;
+            case 'arrowup': e.preventDefault(); this.pan(0, 50); break;
+            case 'arrowdown': e.preventDefault(); this.pan(0, -50); break;
+            case 'arrowleft': e.preventDefault(); this.pan(50, 0); break;
+            case 'arrowright': e.preventDefault(); this.pan(-50, 0); break;
+            case 'z': if (e.ctrlKey || e.metaKey) { e.preventDefault(); this.undo(); } break;
+            case 'y': if (e.ctrlKey || e.metaKey) { e.preventDefault(); this.redo(); } break;
+            case 's': if (e.ctrlKey || e.metaKey) { e.preventDefault(); this.screenshot(); } break;
             case 'f': this.toggleFullscreen(); break;
         }
     }
     
+    // ═══════════════════════════════════════════════════════════════════════
+    // UI CONTROLS - Connect to HTML buttons
+    // ═══════════════════════════════════════════════════════════════════════
+    
     setupUIControls() {
-        // Fractal type
-        document.querySelectorAll('[data-fractal-type]').forEach(el => {
-            el.addEventListener('click', () => this.setFractalType(el.dataset.fractalType));
+        console.log('[App] Setting up UI controls...');
+        
+        // Navigation buttons
+        this.bindButton('btn-home', () => this.reset());
+        this.bindButton('btn-back', () => this.undo());
+        this.bindButton('btn-forward', () => this.redo());
+        this.bindButton('btn-undo', () => this.undo());
+        this.bindButton('btn-redo', () => this.redo());
+        this.bindButton('btn-zoom-in', () => { this.zoomAt(2); this.saveToHistory(); });
+        this.bindButton('btn-zoom-out', () => { this.zoomAt(0.5); this.saveToHistory(); });
+        this.bindButton('btn-reset-view', () => this.reset());
+        
+        // Export/Screenshot
+        this.bindButton('btn-screenshot', () => this.screenshot());
+        this.bindButton('btn-export', () => this.screenshot());
+        
+        // Fullscreen
+        this.bindButton('btn-fullscreen', () => this.toggleFullscreen());
+        
+        // Bookmarks
+        this.bindButton('btn-bookmark', () => this.addBookmark());
+        this.bindButton('btn-bookmarks', () => this.toggleModal('bookmarks-modal'));
+        this.bindButton('btn-bookmarks-sidebar', () => this.toggleModal('bookmarks-modal'));
+        
+        // Share
+        this.bindButton('btn-share', () => this.shareLocation());
+        this.bindButton('btn-copy-url', () => this.copyURL());
+        
+        // Help
+        this.bindButton('btn-help', () => this.toggleModal('help-modal'));
+        
+        // Settings
+        this.bindButton('btn-settings', () => this.toggleModal('settings-modal'));
+        
+        // History
+        this.bindButton('btn-history', () => this.toggleModal('history-modal'));
+        this.bindButton('btn-history-sidebar', () => this.toggleModal('history-modal'));
+        
+        // Random location
+        this.bindButton('btn-random-location', () => this.randomLocation());
+        
+        // 2D/3D Mode switcher
+        this.bindButton('mode-2d', () => this.setMode('2d'));
+        this.bindButton('mode-3d', () => this.setMode('3d'));
+        
+        // Fractal type dropdown items
+        document.querySelectorAll('[data-fractal]').forEach(el => {
+            el.addEventListener('click', () => {
+                const type = el.dataset.fractal;
+                console.log('[App] Fractal selected:', type);
+                this.setFractalType(type);
+            });
         });
         
-        const fractalSelect = document.getElementById('fractal-type');
-        if (fractalSelect) {
-            fractalSelect.addEventListener('change', (e) => this.setFractalType(e.target.value));
+        // Fractal selector button (dropdown toggle)
+        const fractalBtn = document.getElementById('fractal-selector-btn');
+        const fractalDropdown = document.getElementById('fractal-dropdown');
+        if (fractalBtn && fractalDropdown) {
+            fractalBtn.addEventListener('click', () => {
+                fractalDropdown.classList.toggle('open');
+            });
+            // Close on outside click
+            document.addEventListener('click', (e) => {
+                if (!fractalBtn.contains(e.target) && !fractalDropdown.contains(e.target)) {
+                    fractalDropdown.classList.remove('open');
+                }
+            });
         }
         
-        // Iterations
-        const iterSlider = document.getElementById('max-iterations');
-        const iterValue = document.getElementById('iterations-value');
+        // Iterations slider
+        const iterSlider = document.getElementById('slider-iterations');
+        const iterInput = document.getElementById('input-iterations');
         if (iterSlider) {
             iterSlider.addEventListener('input', (e) => {
                 this.params.maxIterations = parseInt(e.target.value);
-                if (iterValue) iterValue.textContent = e.target.value;
+                if (iterInput) iterInput.value = e.target.value;
+                this.render();
             });
-            iterSlider.addEventListener('change', () => this.render());
+        }
+        if (iterInput) {
+            iterInput.addEventListener('change', (e) => {
+                this.params.maxIterations = parseInt(e.target.value) || 500;
+                if (iterSlider) iterSlider.value = this.params.maxIterations;
+                this.render();
+            });
         }
         
-        // Palette
-        document.querySelectorAll('[data-palette]').forEach(el => {
+        // Quick iteration buttons
+        document.querySelectorAll('[data-iterations]').forEach(el => {
             el.addEventListener('click', () => {
-                this.params.palette = el.dataset.palette;
-                this.expandPalette(el.dataset.palette);
+                this.params.maxIterations = parseInt(el.dataset.iterations);
+                if (iterSlider) iterSlider.value = this.params.maxIterations;
+                if (iterInput) iterInput.value = this.params.maxIterations;
                 this.render();
             });
         });
         
-        const paletteSelect = document.getElementById('palette');
-        if (paletteSelect) {
-            paletteSelect.addEventListener('change', (e) => {
-                this.params.palette = e.target.value;
-                this.expandPalette(e.target.value);
-                this.render();
-            });
-        }
-        
-        // Buttons
-        document.querySelectorAll('[data-action="reset"]').forEach(el => el.addEventListener('click', () => this.reset()));
-        document.querySelectorAll('[data-action="export"]').forEach(el => el.addEventListener('click', () => this.exportImage()));
-        document.querySelectorAll('[data-action="fullscreen"]').forEach(el => el.addEventListener('click', () => this.toggleFullscreen()));
-        
-        // Sidebar
+        // Sidebar toggle
         const sidebarToggle = document.getElementById('sidebar-toggle');
         const sidebar = document.getElementById('sidebar');
         if (sidebarToggle && sidebar) {
-            sidebarToggle.addEventListener('click', () => sidebar.classList.toggle('collapsed'));
+            sidebarToggle.addEventListener('click', () => {
+                sidebar.classList.toggle('collapsed');
+            });
         }
         
-        // Modals
-        document.querySelectorAll('.modal-close').forEach(el => {
-            el.addEventListener('click', () => el.closest('.modal')?.classList.remove('active'));
+        // Modal close buttons
+        document.querySelectorAll('.modal-close, [data-close-modal]').forEach(el => {
+            el.addEventListener('click', () => {
+                el.closest('.modal')?.classList.remove('active');
+            });
         });
+        
+        // Modal overlay clicks
+        document.querySelectorAll('.modal-overlay').forEach(el => {
+            el.addEventListener('click', (e) => {
+                if (e.target === el) {
+                    el.closest('.modal')?.classList.remove('active');
+                }
+            });
+        });
+        
+        console.log('[App] UI controls setup complete');
     }
     
-    zoom(factor, sx = null, sy = null) {
+    bindButton(id, handler) {
+        const el = document.getElementById(id);
+        if (el) {
+            el.addEventListener('click', (e) => {
+                e.preventDefault();
+                console.log('[App] Button clicked:', id);
+                handler();
+            });
+        } else {
+            // Try class-based selector
+            document.querySelectorAll('.' + id).forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    console.log('[App] Button clicked:', id);
+                    handler();
+                });
+            });
+        }
+    }
+    
+    // ═══════════════════════════════════════════════════════════════════════
+    // NAVIGATION METHODS
+    // ═══════════════════════════════════════════════════════════════════════
+    
+    zoomAt(factor, screenX = null, screenY = null) {
         const scale = 4 / this.params.zoom;
         const ar = this.canvas.width / this.canvas.height;
         
-        if (sx !== null && sy !== null) {
+        if (screenX !== null && screenY !== null) {
             const rect = this.canvas.getBoundingClientRect();
-            const nx = (sx - rect.left) / rect.width;
-            const ny = (sy - rect.top) / rect.height;
+            const nx = (screenX - rect.left) / rect.width;
+            const ny = 1 - (screenY - rect.top) / rect.height; // Flip Y
             
             const fx = this.params.centerX + (nx - 0.5) * scale * ar;
             const fy = this.params.centerY + (ny - 0.5) * scale;
@@ -339,7 +606,6 @@ class App {
         }
         
         this.params.zoom *= factor;
-        this.updateInfo();
         this.render();
     }
     
@@ -349,9 +615,7 @@ class App {
         const ar = this.canvas.width / this.canvas.height;
         
         this.params.centerX -= (dx / rect.width) * scale * ar;
-        this.params.centerY -= (dy / rect.height) * scale;
-        
-        this.updateInfo();
+        this.params.centerY += (dy / rect.height) * scale; // Flip Y
         this.render();
     }
     
@@ -360,174 +624,141 @@ class App {
             mandelbrot: { x: -0.5, y: 0 },
             julia: { x: 0, y: 0 },
             burningship: { x: -0.4, y: -0.6 },
+            'burning-ship': { x: -0.4, y: -0.6 },
             tricorn: { x: -0.3, y: 0 }
         };
-        const d = defaults[this.params.fractalType] || { x: 0, y: 0 };
+        const d = defaults[this.params.fractalType] || { x: -0.5, y: 0 };
         this.params.centerX = d.x;
         this.params.centerY = d.y;
         this.params.zoom = 1;
-        this.updateInfo();
+        this.saveToHistory();
         this.render();
     }
     
     setFractalType(type) {
+        console.log('[App] Setting fractal type:', type);
         this.params.fractalType = type;
-        document.querySelectorAll('[data-fractal-type]').forEach(el => {
-            el.classList.toggle('active', el.dataset.fractalType === type);
+        
+        // Update UI
+        document.querySelectorAll('[data-fractal]').forEach(el => {
+            el.classList.toggle('active', el.dataset.fractal === type);
         });
+        
+        // Update button text
+        const btn = document.getElementById('fractal-selector-btn');
+        if (btn) {
+            const nameEl = btn.querySelector('.fractal-name');
+            if (nameEl) {
+                const names = {
+                    mandelbrot: 'Mandelbrot Set',
+                    julia: 'Julia Set',
+                    burningship: 'Burning Ship',
+                    'burning-ship': 'Burning Ship',
+                    tricorn: 'Tricorn'
+                };
+                nameEl.textContent = names[type] || type;
+            }
+        }
+        
+        // Close dropdown
+        document.getElementById('fractal-dropdown')?.classList.remove('open');
+        
         this.reset();
     }
     
+    setMode(mode) {
+        console.log('[App] Setting mode:', mode);
+        // For now just log - 3D would need Three.js
+        document.querySelectorAll('.mode-btn').forEach(el => {
+            el.classList.toggle('active', el.id === 'mode-' + mode);
+        });
+    }
+    
     // ═══════════════════════════════════════════════════════════════════════
-    // OPTIMIZED CHUNKED RENDERING
+    // HISTORY (UNDO/REDO)
     // ═══════════════════════════════════════════════════════════════════════
     
-    async render() {
-        if (this.isRendering) {
-            this.renderAborted = true;
-            return;
+    saveToHistory() {
+        const state = {
+            centerX: this.params.centerX,
+            centerY: this.params.centerY,
+            zoom: this.params.zoom,
+            fractalType: this.params.fractalType
+        };
+        
+        // Remove any future states if we're not at the end
+        if (this.historyIndex < this.history.length - 1) {
+            this.history = this.history.slice(0, this.historyIndex + 1);
         }
         
-        this.isRendering = true;
-        this.renderAborted = false;
-        
-        const startTime = performance.now();
-        const w = this.canvas.width;
-        const h = this.canvas.height;
-        
-        if (!this.imageData || this.imageData.width !== w || this.imageData.height !== h) {
-            this.imageData = this.ctx.createImageData(w, h);
+        this.history.push(state);
+        if (this.history.length > this.maxHistory) {
+            this.history.shift();
         }
-        
-        const data = this.imageData.data;
-        const { centerX, centerY, zoom, maxIterations, fractalType, juliaC } = this.params;
-        const scale = 4 / zoom;
-        const ar = w / h;
-        const palette = this.paletteColors;
-        
-        // Render in chunks to keep UI responsive
-        const chunkSize = this.chunkSize;
-        
-        for (let startY = 0; startY < h; startY += chunkSize) {
-            if (this.renderAborted) break;
-            
-            const endY = Math.min(startY + chunkSize, h);
-            
-            // Render chunk
-            for (let py = startY; py < endY; py++) {
-                const y0Base = centerY + (py / h - 0.5) * scale;
-                
-                for (let px = 0; px < w; px++) {
-                    const x0 = centerX + (px / w - 0.5) * scale * ar;
-                    const y0 = y0Base;
-                    
-                    let iter, mag;
-                    
-                    // Inline iteration for speed
-                    if (fractalType === 'mandelbrot') {
-                        let x = 0, y = 0, x2 = 0, y2 = 0;
-                        iter = 0;
-                        while (x2 + y2 <= 4 && iter < maxIterations) {
-                            y = 2 * x * y + y0;
-                            x = x2 - y2 + x0;
-                            x2 = x * x;
-                            y2 = y * y;
-                            iter++;
-                        }
-                        mag = x2 + y2;
-                    } else if (fractalType === 'julia') {
-                        let x = x0, y = y0, x2 = x * x, y2 = y * y;
-                        iter = 0;
-                        while (x2 + y2 <= 4 && iter < maxIterations) {
-                            y = 2 * x * y + juliaC.y;
-                            x = x2 - y2 + juliaC.x;
-                            x2 = x * x;
-                            y2 = y * y;
-                            iter++;
-                        }
-                        mag = x2 + y2;
-                    } else if (fractalType === 'burningship') {
-                        let x = 0, y = 0, x2 = 0, y2 = 0;
-                        iter = 0;
-                        while (x2 + y2 <= 4 && iter < maxIterations) {
-                            y = Math.abs(2 * x * y) + y0;
-                            x = x2 - y2 + x0;
-                            x2 = x * x;
-                            y2 = y * y;
-                            iter++;
-                        }
-                        mag = x2 + y2;
-                    } else if (fractalType === 'tricorn') {
-                        let x = 0, y = 0, x2 = 0, y2 = 0;
-                        iter = 0;
-                        while (x2 + y2 <= 4 && iter < maxIterations) {
-                            y = -2 * x * y + y0;
-                            x = x2 - y2 + x0;
-                            x2 = x * x;
-                            y2 = y * y;
-                            iter++;
-                        }
-                        mag = x2 + y2;
-                    } else {
-                        // Default mandelbrot
-                        let x = 0, y = 0, x2 = 0, y2 = 0;
-                        iter = 0;
-                        while (x2 + y2 <= 4 && iter < maxIterations) {
-                            y = 2 * x * y + y0;
-                            x = x2 - y2 + x0;
-                            x2 = x * x;
-                            y2 = y * y;
-                            iter++;
-                        }
-                        mag = x2 + y2;
-                    }
-                    
-                    const idx = (py * w + px) * 4;
-                    
-                    if (iter === maxIterations) {
-                        data[idx] = 0;
-                        data[idx + 1] = 0;
-                        data[idx + 2] = 0;
-                    } else {
-                        // Smooth coloring
-                        const smoothed = iter + 1 - Math.log2(Math.log2(mag + 1));
-                        const colorIdx = Math.floor((smoothed * 4) % 256);
-                        const ci = Math.max(0, Math.min(255, colorIdx)) * 3;
-                        
-                        data[idx] = palette[ci];
-                        data[idx + 1] = palette[ci + 1];
-                        data[idx + 2] = palette[ci + 2];
-                    }
-                    data[idx + 3] = 255;
-                }
-            }
-            
-            // Yield to browser every chunk
-            if (startY + chunkSize < h) {
-                this.ctx.putImageData(this.imageData, 0, 0);
-                await new Promise(r => setTimeout(r, 0));
-            }
-        }
-        
-        // Final draw
-        this.ctx.putImageData(this.imageData, 0, 0);
-        
-        const elapsed = performance.now() - startTime;
-        this.updatePerformance(elapsed);
-        this.isRendering = false;
-        
-        // If aborted, re-render with new params
-        if (this.renderAborted) {
-            this.renderAborted = false;
-            this.render();
+        this.historyIndex = this.history.length - 1;
+    }
+    
+    undo() {
+        if (this.historyIndex > 0) {
+            this.historyIndex--;
+            this.restoreState(this.history[this.historyIndex]);
         }
     }
     
-    exportImage() {
+    redo() {
+        if (this.historyIndex < this.history.length - 1) {
+            this.historyIndex++;
+            this.restoreState(this.history[this.historyIndex]);
+        }
+    }
+    
+    restoreState(state) {
+        this.params.centerX = state.centerX;
+        this.params.centerY = state.centerY;
+        this.params.zoom = state.zoom;
+        this.params.fractalType = state.fractalType;
+        this.render();
+    }
+    
+    // ═══════════════════════════════════════════════════════════════════════
+    // BOOKMARKS
+    // ═══════════════════════════════════════════════════════════════════════
+    
+    loadBookmarks() {
+        try {
+            return JSON.parse(localStorage.getItem('abyss-bookmarks') || '[]');
+        } catch { return []; }
+    }
+    
+    saveBookmarks() {
+        localStorage.setItem('abyss-bookmarks', JSON.stringify(this.bookmarks));
+    }
+    
+    addBookmark() {
+        const bookmark = {
+            id: Date.now(),
+            name: `Bookmark ${this.bookmarks.length + 1}`,
+            centerX: this.params.centerX,
+            centerY: this.params.centerY,
+            zoom: this.params.zoom,
+            fractalType: this.params.fractalType,
+            timestamp: new Date().toISOString()
+        };
+        this.bookmarks.push(bookmark);
+        this.saveBookmarks();
+        this.showNotification('Bookmark added!');
+    }
+    
+    // ═══════════════════════════════════════════════════════════════════════
+    // UTILITIES
+    // ═══════════════════════════════════════════════════════════════════════
+    
+    screenshot() {
         const link = document.createElement('a');
         link.download = `abyss-${this.params.fractalType}-${Date.now()}.png`;
         link.href = this.canvas.toDataURL('image/png');
         link.click();
+        this.showNotification('Screenshot saved!');
     }
     
     toggleFullscreen() {
@@ -538,26 +769,83 @@ class App {
         }
     }
     
+    toggleModal(id) {
+        const modal = document.getElementById(id);
+        if (modal) {
+            modal.classList.toggle('active');
+        }
+    }
+    
+    shareLocation() {
+        const url = this.getShareURL();
+        navigator.clipboard.writeText(url).then(() => {
+            this.showNotification('URL copied to clipboard!');
+        }).catch(() => {
+            prompt('Copy this URL:', url);
+        });
+    }
+    
+    copyURL() {
+        this.shareLocation();
+    }
+    
+    getShareURL() {
+        const p = this.params;
+        const hash = `#x=${p.centerX}&y=${p.centerY}&z=${p.zoom}&f=${p.fractalType}&i=${p.maxIterations}`;
+        return window.location.origin + window.location.pathname + hash;
+    }
+    
+    randomLocation() {
+        // Random interesting locations in Mandelbrot set
+        const locations = [
+            { x: -0.7436447860, y: 0.1318252536, z: 1e8 },
+            { x: -0.7453, y: 0.1127, z: 5000 },
+            { x: -0.16, y: 1.0405, z: 100 },
+            { x: -1.25066, y: 0.02012, z: 2000 },
+            { x: -0.748, y: 0.1, z: 300 },
+            { x: 0.001643721971153, y: 0.822467633298876, z: 1e6 }
+        ];
+        const loc = locations[Math.floor(Math.random() * locations.length)];
+        this.params.centerX = loc.x;
+        this.params.centerY = loc.y;
+        this.params.zoom = loc.z;
+        this.saveToHistory();
+        this.render();
+        this.showNotification('Jumped to random location!');
+    }
+    
+    showNotification(msg) {
+        console.log('[App] Notification:', msg);
+        // Try to use existing notification system
+        const container = document.getElementById('notifications') || document.getElementById('toast-container');
+        if (container) {
+            const toast = document.createElement('div');
+            toast.className = 'toast';
+            toast.textContent = msg;
+            container.appendChild(toast);
+            setTimeout(() => toast.remove(), 3000);
+        }
+    }
+    
     updateInfo() {
-        const zoomEl = document.getElementById('zoom-level');
+        const zoomEl = document.getElementById('zoom-level') || document.getElementById('info-zoom');
         if (zoomEl) {
             const exp = Math.log10(this.params.zoom);
             zoomEl.textContent = exp >= 3 ? `10^${exp.toFixed(1)}` : `${this.params.zoom.toFixed(2)}x`;
         }
         
-        const coordEl = document.getElementById('coordinates');
-        if (coordEl) {
-            const sign = this.params.centerY >= 0 ? '+' : '';
-            coordEl.textContent = `${this.params.centerX.toFixed(10)} ${sign}${this.params.centerY.toFixed(10)}i`;
-        }
+        const coordRe = document.getElementById('coord-real');
+        const coordIm = document.getElementById('coord-imag');
+        if (coordRe) coordRe.textContent = this.params.centerX.toFixed(12);
+        if (coordIm) coordIm.textContent = this.params.centerY.toFixed(12);
+        
+        const iterEl = document.getElementById('info-iterations');
+        if (iterEl) iterEl.textContent = this.params.maxIterations;
     }
     
     updatePerformance(ms) {
-        const el = document.getElementById('render-time');
-        if (el) el.textContent = `${ms.toFixed(0)}ms`;
-        
-        const fps = document.getElementById('fps');
-        if (fps) fps.textContent = `${Math.round(1000 / ms)} FPS`;
+        const el = document.getElementById('render-time') || document.getElementById('info-render-time');
+        if (el) el.textContent = `${ms.toFixed(1)}ms`;
     }
     
     hideLoadingScreen() {
@@ -570,7 +858,7 @@ class App {
     }
     
     showError(msg) {
-        const el = document.querySelector('.loading-text');
+        const el = document.querySelector('.loading-text') || document.getElementById('loading-status');
         if (el) {
             el.textContent = `Error: ${msg}`;
             el.style.color = '#ff4444';
@@ -578,9 +866,15 @@ class App {
     }
 }
 
+// ═══════════════════════════════════════════════════════════════════════════
+// BOOTSTRAP
+// ═══════════════════════════════════════════════════════════════════════════
+
 async function bootstrap() {
+    console.log('[Bootstrap] Starting...');
     const app = new App();
     await app.init();
+    window.AbyssExplorer = app;
     window.abyssExplorer = app;
     return app;
 }
