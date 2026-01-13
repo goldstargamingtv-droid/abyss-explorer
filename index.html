@@ -6626,44 +6626,30 @@
                 updateLoadingProgress('Initializing core modules...', 10);
                 
                 // Create main application instance
-                window.AbyssExplorer = new App({
-                    // Canvas references
-                    canvas2d: document.getElementById('fractal-canvas-2d'),
-                    canvas3d: document.getElementById('fractal-canvas-3d'),
-                    overlayCanvas: document.getElementById('overlay-canvas'),
-                    minimapCanvas: document.getElementById('minimap-canvas'),
-                    
-                    // Progress callbacks
-                    onProgress: (message, progress) => {
-                        updateLoadingProgress(message, progress);
-                    },
-                    
-                    // Ready callback
-                    onReady: () => {
-                        // Fade out loading screen
-                        loadingScreen.classList.add('hidden');
-                        
-                        // Remove loading screen from DOM after animation
-                        setTimeout(() => {
-                            loadingScreen.remove();
-                        }, 500);
-                        
-                        // Check for URL hash (shared location)
-                        if (window.location.hash) {
-                            window.AbyssExplorer.loadFromHash(window.location.hash);
-                        }
-                        
-                        console.log('%c🌀 Abyss Explorer v1.0.0 Ready', 
-                            'color: #6366f1; font-size: 14px; font-weight: bold;');
-                        console.log('%cExplore the infinite depths of mathematical beauty.', 
-                            'color: #a1a1aa;');
-                        console.log('%cPress ? for keyboard shortcuts.', 
-                            'color: #a1a1aa;');
-                    },
-                    
-                    // Error callback
-                    onError: handleLoadingError
-                });
+                const app = new App();
+                window.AbyssExplorer = app;
+                
+                updateLoadingProgress('Setting up canvas...', 30);
+                
+                // Initialize the app
+                await app.init();
+                
+                updateLoadingProgress('Ready!', 100);
+                
+                // Fade out loading screen
+                loadingScreen.classList.add('hidden');
+                
+                // Remove loading screen from DOM after animation
+                setTimeout(() => {
+                    loadingScreen.remove();
+                }, 500);
+                
+                console.log('%c🌀 Abyss Explorer v1.0.0 Ready', 
+                    'color: #6366f1; font-size: 14px; font-weight: bold;');
+                console.log('%cExplore the infinite depths of mathematical beauty.', 
+                    'color: #a1a1aa;');
+                console.log('%cPress ? for keyboard shortcuts.', 
+                    'color: #a1a1aa;');
                 
             } catch (error) {
                 handleLoadingError(error);
