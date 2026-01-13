@@ -89,11 +89,11 @@
     <!-- ═══════════════════════════════════════════════════════════════════════════
          FAVICONS & APP ICONS
          ═══════════════════════════════════════════════════════════════════════════ -->
-    <link rel="icon" type="image/svg+xml" href="assets/icons/fractal-icon.svg">
-    <link rel="icon" type="image/png" sizes="32x32" href="assets/icons/favicon-32x32.png">
-    <link rel="icon" type="image/png" sizes="16x16" href="assets/icons/favicon-16x16.png">
-    <link rel="apple-touch-icon" sizes="180x180" href="assets/icons/apple-touch-icon.png">
-    <link rel="mask-icon" href="assets/icons/safari-pinned-tab.svg" color="#6366f1">
+    <link rel="icon" type="image/svg+xml" href="assets/icons/logo.svg">
+    <link rel="icon" type="image/svg+xml" sizes="32x32" href="assets/icons/logo.svg">
+    <link rel="icon" type="image/svg+xml" sizes="16x16" href="assets/icons/logo.svg">
+    <link rel="apple-touch-icon" href="assets/icons/logo.svg">
+    <link rel="mask-icon" href="assets/icons/logo.svg" color="#6366f1">
     <link rel="manifest" href="manifest.json">
     
     <!-- ═══════════════════════════════════════════════════════════════════════════
@@ -125,10 +125,9 @@
     
     <!-- Application Stylesheets -->
     <link rel="stylesheet" href="css/main.css">
-    <link rel="stylesheet" href="css/themes.css">
+    <link rel="stylesheet" href="css/ui.css">
     <link rel="stylesheet" href="css/controls.css">
-    <link rel="stylesheet" href="css/gallery.css">
-    <link rel="stylesheet" href="css/mobile.css">
+    <link rel="stylesheet" href="css/animations.css">
     
     <!-- ═══════════════════════════════════════════════════════════════════════════
          CRITICAL INLINE CSS - Prevents Flash of Unstyled Content (FOUC)
@@ -6539,7 +6538,6 @@
     <script 
         src="https://cdnjs.cloudflare.com/ajax/libs/decimal.js/10.4.3/decimal.min.js" 
         defer
-        integrity="sha512-v8Hb5+uIFnxLxHN/k0FSyknAJmRnZpjbKj/KlfYP6Pi9rLl/bDbiHL+82tCWkAu9B4z/3ViE/gNXaPI+0y2Lnw=="
         crossorigin="anonymous"
         referrerpolicy="no-referrer"
     ></script>
@@ -6587,7 +6585,7 @@
          */
         
         // Import main application class
-        import { App } from './js/app.js';
+        import { App } from './js/main.js';
         
         // ═══════════════════════════════════════════════════════════════════════════
         // INITIALIZATION
