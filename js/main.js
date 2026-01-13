@@ -1,7 +1,5 @@
 /**
- * ═══════════════════════════════════════════════════════════════════════════
- * ABYSS EXPLORER - Main Application (WebGL Accelerated)
- * ═══════════════════════════════════════════════════════════════════════════
+ * ABYSS EXPLORER - Main Application (WebGL + Correct IDs)
  */
 
 class App {
@@ -10,9 +8,7 @@ class App {
         this.gl = null;
         this.program = null;
         this.isInitialized = false;
-        this.animationFrame = null;
         
-        // Fractal parameters
         this.params = {
             centerX: -0.5,
             centerY: 0,
@@ -23,12 +19,8 @@ class App {
             juliaC: { x: -0.7, y: 0.27015 }
         };
         
-        // History for undo/redo
         this.history = [];
         this.historyIndex = -1;
-        this.maxHistory = 50;
-        
-        // Bookmarks
         this.bookmarks = this.loadBookmarks();
         
         console.log('[App] Constructor called');
@@ -63,21 +55,14 @@ class App {
             uniform vec2 u_juliaC;
             
             vec3 palette(float t) {
-                // Inferno-like palette
                 vec3 a = vec3(0.0, 0.0, 0.02);
                 vec3 b = vec3(0.9, 0.3, 0.0);
                 vec3 c = vec3(1.0, 0.8, 0.2);
                 vec3 d = vec3(1.0, 1.0, 0.6);
-                
                 t = fract(t + u_colorOffset);
-                
-                if (t < 0.33) {
-                    return mix(a, b, t * 3.0);
-                } else if (t < 0.66) {
-                    return mix(b, c, (t - 0.33) * 3.0);
-                } else {
-                    return mix(c, d, (t - 0.66) * 3.0);
-                }
+                if (t < 0.33) return mix(a, b, t * 3.0);
+                else if (t < 0.66) return mix(b, c, (t - 0.33) * 3.0);
+                else return mix(c, d, (t - 0.66) * 3.0);
             }
             
             void main() {
@@ -85,15 +70,11 @@ class App {
                 float x0 = u_center.x + (v_uv.x - 0.5) * scale * u_aspectRatio;
                 float y0 = u_center.y + (v_uv.y - 0.5) * scale;
                 
-                float x = 0.0;
-                float y = 0.0;
+                float x = 0.0, y = 0.0;
                 int iter = 0;
                 
-                // Fractal type: 0=mandelbrot, 1=julia, 2=burningship, 3=tricorn
                 if (u_fractalType == 1) {
-                    // Julia
-                    x = x0;
-                    y = y0;
+                    x = x0; y = y0;
                     for (int i = 0; i < 10000; i++) {
                         if (i >= u_maxIter) break;
                         if (x*x + y*y > 4.0) break;
@@ -103,7 +84,6 @@ class App {
                         iter++;
                     }
                 } else if (u_fractalType == 2) {
-                    // Burning Ship
                     for (int i = 0; i < 10000; i++) {
                         if (i >= u_maxIter) break;
                         if (x*x + y*y > 4.0) break;
@@ -113,7 +93,6 @@ class App {
                         iter++;
                     }
                 } else if (u_fractalType == 3) {
-                    // Tricorn
                     for (int i = 0; i < 10000; i++) {
                         if (i >= u_maxIter) break;
                         if (x*x + y*y > 4.0) break;
@@ -123,7 +102,6 @@ class App {
                         iter++;
                     }
                 } else {
-                    // Mandelbrot (default)
                     for (int i = 0; i < 10000; i++) {
                         if (i >= u_maxIter) break;
                         if (x*x + y*y > 4.0) break;
@@ -137,10 +115,8 @@ class App {
                 if (iter >= u_maxIter) {
                     gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0);
                 } else {
-                    // Smooth coloring
                     float smoothed = float(iter) + 1.0 - log2(log2(x*x + y*y + 1.0));
-                    float t = smoothed / 100.0;
-                    vec3 color = palette(t);
+                    vec3 color = palette(smoothed / 100.0);
                     gl_FragColor = vec4(color, 1.0);
                 }
             }
@@ -156,26 +132,21 @@ class App {
         this.updateLoadingStatus('Setting up WebGL...', 20);
         
         try {
-            // Get canvas
             this.canvas = document.getElementById('fractal-canvas-2d') || document.getElementById('fractal-canvas');
             if (!this.canvas) throw new Error('Canvas not found');
             console.log('[App] Canvas found:', this.canvas.id);
             
-            // Setup WebGL
             this.updateLoadingStatus('Compiling shaders...', 40);
             await this.setupWebGL();
             console.log('[App] WebGL setup complete');
             
-            // Setup canvas size
             this.setupCanvas();
             
-            // Setup all event listeners
             this.updateLoadingStatus('Setting up controls...', 60);
             this.setupEventListeners();
             this.setupUIControls();
             console.log('[App] Event listeners attached');
             
-            // Initial render
             this.updateLoadingStatus('Rendering fractal...', 80);
             this.saveToHistory();
             this.render();
@@ -184,17 +155,13 @@ class App {
             console.log('[App] ✅ Initialization complete!');
             
             this.updateLoadingStatus('Ready!', 100);
-            await this.delay(300);
+            await new Promise(r => setTimeout(r, 300));
             this.hideLoadingScreen();
             
         } catch (error) {
             console.error('[App] ❌ Init failed:', error);
             this.showError(error.message);
         }
-    }
-    
-    delay(ms) {
-        return new Promise(r => setTimeout(r, ms));
     }
     
     updateLoadingStatus(msg, pct) {
@@ -209,12 +176,9 @@ class App {
         if (!this.gl) throw new Error('WebGL not supported');
         
         const gl = this.gl;
-        
-        // Compile shaders
         const vs = this.compileShader(gl.VERTEX_SHADER, this.getVertexShader());
         const fs = this.compileShader(gl.FRAGMENT_SHADER, this.getFragmentShader());
         
-        // Create program
         this.program = gl.createProgram();
         gl.attachShader(this.program, vs);
         gl.attachShader(this.program, fs);
@@ -224,18 +188,15 @@ class App {
             throw new Error('Shader program failed: ' + gl.getProgramInfoLog(this.program));
         }
         
-        // Create fullscreen quad
         const vertices = new Float32Array([-1,-1, 1,-1, -1,1, 1,1]);
         const buffer = gl.createBuffer();
         gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
         gl.bufferData(gl.ARRAY_BUFFER, vertices, gl.STATIC_DRAW);
         
-        // Setup attribute
         const posLoc = gl.getAttribLocation(this.program, 'a_position');
         gl.enableVertexAttribArray(posLoc);
         gl.vertexAttribPointer(posLoc, 2, gl.FLOAT, false, 0, 0);
         
-        // Get uniform locations
         this.uniforms = {
             center: gl.getUniformLocation(this.program, 'u_center'),
             zoom: gl.getUniformLocation(this.program, 'u_zoom'),
@@ -252,11 +213,8 @@ class App {
         const shader = gl.createShader(type);
         gl.shaderSource(shader, source);
         gl.compileShader(shader);
-        
         if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
-            const error = gl.getShaderInfoLog(shader);
-            gl.deleteShader(shader);
-            throw new Error('Shader compile error: ' + error);
+            throw new Error('Shader compile error: ' + gl.getShaderInfoLog(shader));
         }
         return shader;
     }
@@ -267,17 +225,9 @@ class App {
                         { width: window.innerWidth, height: window.innerHeight };
             this.canvas.width = Math.floor(rect.width);
             this.canvas.height = Math.floor(rect.height);
-            this.canvas.style.width = rect.width + 'px';
-            this.canvas.style.height = rect.height + 'px';
-            
-            if (this.gl) {
-                this.gl.viewport(0, 0, this.canvas.width, this.canvas.height);
-            }
-            if (this.isInitialized) {
-                this.render();
-            }
+            if (this.gl) this.gl.viewport(0, 0, this.canvas.width, this.canvas.height);
+            if (this.isInitialized) this.render();
         };
-        
         resize();
         let timeout;
         window.addEventListener('resize', () => {
@@ -295,10 +245,8 @@ class App {
         if (!gl || !this.program) return;
         
         const startTime = performance.now();
-        
         gl.useProgram(this.program);
         
-        // Set uniforms
         gl.uniform2f(this.uniforms.center, this.params.centerX, this.params.centerY);
         gl.uniform1f(this.uniforms.zoom, this.params.zoom);
         gl.uniform1f(this.uniforms.aspectRatio, this.canvas.width / this.canvas.height);
@@ -306,15 +254,12 @@ class App {
         gl.uniform1f(this.uniforms.colorOffset, this.params.colorOffset);
         gl.uniform2f(this.uniforms.juliaC, this.params.juliaC.x, this.params.juliaC.y);
         
-        // Fractal type
-        const types = { mandelbrot: 0, julia: 1, burningship: 2, 'burning-ship': 2, tricorn: 3 };
+        const types = { mandelbrot: 0, julia: 1, burningship: 2, 'burning-ship': 2, tricorn: 3, multibrot: 0 };
         gl.uniform1i(this.uniforms.fractalType, types[this.params.fractalType] || 0);
         
-        // Draw
         gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
         
-        const elapsed = performance.now() - startTime;
-        this.updatePerformance(elapsed);
+        this.updatePerformance(performance.now() - startTime);
         this.updateInfo();
     }
     
@@ -323,17 +268,13 @@ class App {
     // ═══════════════════════════════════════════════════════════════════════
     
     setupEventListeners() {
-        let isDragging = false;
-        let lastX, lastY;
+        let isDragging = false, lastX, lastY;
         
-        // Mouse wheel zoom
         this.canvas.addEventListener('wheel', (e) => {
             e.preventDefault();
-            const factor = e.deltaY > 0 ? 0.75 : 1.33;
-            this.zoomAt(factor, e.clientX, e.clientY);
+            this.zoomAt(e.deltaY > 0 ? 0.75 : 1.33, e.clientX, e.clientY);
         }, { passive: false });
         
-        // Mouse drag
         this.canvas.addEventListener('mousedown', (e) => {
             isDragging = true;
             lastX = e.clientX;
@@ -356,16 +297,12 @@ class App {
             }
         });
         
-        // Double click zoom
         this.canvas.addEventListener('dblclick', (e) => {
             this.zoomAt(3, e.clientX, e.clientY);
             this.saveToHistory();
         });
         
-        // Keyboard
         document.addEventListener('keydown', (e) => this.handleKeyboard(e));
-        
-        // Touch
         this.setupTouchEvents();
     }
     
@@ -389,7 +326,6 @@ class App {
         this.canvas.addEventListener('touchmove', (e) => {
             e.preventDefault();
             if (!touching) return;
-            
             if (e.touches.length === 1) {
                 this.pan(e.touches[0].clientX - lastX, e.touches[0].clientY - lastY);
                 lastX = e.touches[0].clientX;
@@ -417,13 +353,10 @@ class App {
     
     handleKeyboard(e) {
         if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
-        
-        const key = e.key.toLowerCase();
-        
-        switch (key) {
+        switch (e.key.toLowerCase()) {
             case 'r': case ' ': e.preventDefault(); this.reset(); break;
             case '+': case '=': this.zoomAt(1.5); this.saveToHistory(); break;
-            case '-': case '_': this.zoomAt(0.67); this.saveToHistory(); break;
+            case '-': this.zoomAt(0.67); this.saveToHistory(); break;
             case 'arrowup': e.preventDefault(); this.pan(0, 50); break;
             case 'arrowdown': e.preventDefault(); this.pan(0, -50); break;
             case 'arrowleft': e.preventDefault(); this.pan(50, 0); break;
@@ -436,136 +369,222 @@ class App {
     }
     
     // ═══════════════════════════════════════════════════════════════════════
-    // UI CONTROLS - Connect to HTML buttons
+    // UI CONTROLS - Using CORRECT element IDs from HTML
     // ═══════════════════════════════════════════════════════════════════════
     
     setupUIControls() {
         console.log('[App] Setting up UI controls...');
         
-        // Navigation buttons
-        this.bindButton('btn-home', () => this.reset());
-        this.bindButton('btn-back', () => this.undo());
-        this.bindButton('btn-forward', () => this.redo());
-        this.bindButton('btn-undo', () => this.undo());
-        this.bindButton('btn-redo', () => this.redo());
-        this.bindButton('btn-zoom-in', () => { this.zoomAt(2); this.saveToHistory(); });
-        this.bindButton('btn-zoom-out', () => { this.zoomAt(0.5); this.saveToHistory(); });
-        this.bindButton('btn-reset-view', () => this.reset());
+        // === TOOLBAR BUTTONS ===
+        this.bindClick('btn-home', () => this.reset());
+        this.bindClick('btn-back', () => this.undo());
+        this.bindClick('btn-forward', () => this.redo());
+        this.bindClick('btn-undo', () => this.undo());
+        this.bindClick('btn-redo', () => this.redo());
+        this.bindClick('btn-zoom-in', () => { this.zoomAt(2); this.saveToHistory(); });
+        this.bindClick('btn-zoom-out', () => { this.zoomAt(0.5); this.saveToHistory(); });
+        this.bindClick('btn-reset-view', () => this.reset());
+        this.bindClick('btn-fit-set', () => this.reset());
+        this.bindClick('btn-center-origin', () => { this.params.centerX = 0; this.params.centerY = 0; this.render(); });
         
-        // Export/Screenshot
-        this.bindButton('btn-screenshot', () => this.screenshot());
-        this.bindButton('btn-export', () => this.screenshot());
+        // === EXPORT/SCREENSHOT ===
+        this.bindClick('btn-screenshot', () => this.screenshot());
+        this.bindClick('btn-export', () => this.toggleModal('modal-export'));
+        this.bindClick('btn-share', () => this.toggleModal('modal-share'));
+        this.bindClick('btn-copy-url', () => this.copyURL());
         
-        // Fullscreen
-        this.bindButton('btn-fullscreen', () => this.toggleFullscreen());
+        // === FULLSCREEN ===
+        this.bindClick('btn-fullscreen', () => this.toggleFullscreen());
         
-        // Bookmarks
-        this.bindButton('btn-bookmark', () => this.addBookmark());
-        this.bindButton('btn-bookmarks', () => this.toggleModal('bookmarks-modal'));
-        this.bindButton('btn-bookmarks-sidebar', () => this.toggleModal('bookmarks-modal'));
+        // === PANELS (use hidden attribute) ===
+        this.bindClick('btn-history', () => this.togglePanel('history-panel'));
+        this.bindClick('btn-history-sidebar', () => this.togglePanel('history-panel'));
+        this.bindClick('btn-bookmarks', () => this.togglePanel('bookmarks-panel'));
+        this.bindClick('btn-bookmarks-sidebar', () => this.togglePanel('bookmarks-panel'));
         
-        // Share
-        this.bindButton('btn-share', () => this.shareLocation());
-        this.bindButton('btn-copy-url', () => this.copyURL());
+        // === MODALS (use active class) ===
+        this.bindClick('btn-help', () => this.toggleModal('modal-help'));
+        this.bindClick('btn-settings', () => this.toggleModal('modal-settings'));
+        this.bindClick('btn-edit-palette', () => this.toggleModal('modal-palette'));
         
-        // Help
-        this.bindButton('btn-help', () => this.toggleModal('help-modal'));
+        // === BOOKMARK ===
+        this.bindClick('btn-bookmark', () => this.addBookmark());
         
-        // Settings
-        this.bindButton('btn-settings', () => this.toggleModal('settings-modal'));
+        // === RANDOM LOCATION ===
+        this.bindClick('btn-random-location', () => this.randomLocation());
         
-        // History
-        this.bindButton('btn-history', () => this.toggleModal('history-modal'));
-        this.bindButton('btn-history-sidebar', () => this.toggleModal('history-modal'));
+        // === 2D/3D MODE ===
+        this.bindClick('mode-2d', () => this.setMode('2d'));
+        this.bindClick('mode-3d', () => this.setMode('3d'));
         
-        // Random location
-        this.bindButton('btn-random-location', () => this.randomLocation());
-        
-        // 2D/3D Mode switcher
-        this.bindButton('mode-2d', () => this.setMode('2d'));
-        this.bindButton('mode-3d', () => this.setMode('3d'));
-        
-        // Fractal type dropdown items
-        document.querySelectorAll('[data-fractal]').forEach(el => {
-            el.addEventListener('click', () => {
-                const type = el.dataset.fractal;
-                console.log('[App] Fractal selected:', type);
-                this.setFractalType(type);
-            });
-        });
-        
-        // Fractal selector button (dropdown toggle)
+        // === FRACTAL TYPE DROPDOWN ===
+        // The dropdown button
         const fractalBtn = document.getElementById('fractal-selector-btn');
         const fractalDropdown = document.getElementById('fractal-dropdown');
         if (fractalBtn && fractalDropdown) {
-            fractalBtn.addEventListener('click', () => {
+            fractalBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
                 fractalDropdown.classList.toggle('open');
-            });
-            // Close on outside click
-            document.addEventListener('click', (e) => {
-                if (!fractalBtn.contains(e.target) && !fractalDropdown.contains(e.target)) {
-                    fractalDropdown.classList.remove('open');
-                }
+                console.log('[App] Fractal dropdown toggled');
             });
         }
         
-        // Iterations slider
-        const iterSlider = document.getElementById('slider-iterations');
-        const iterInput = document.getElementById('input-iterations');
+        // Fractal select dropdown (HTML select element)
+        const fractalSelect = document.getElementById('fractal-select-2d');
+        if (fractalSelect) {
+            fractalSelect.addEventListener('change', (e) => {
+                console.log('[App] Fractal select changed:', e.target.value);
+                this.setFractalType(e.target.value);
+            });
+        }
+        
+        // Dropdown items with data-fractal attribute
+        document.querySelectorAll('[data-fractal]').forEach(el => {
+            el.addEventListener('click', (e) => {
+                const type = el.dataset.fractal;
+                console.log('[App] Fractal item clicked:', type);
+                this.setFractalType(type);
+                // Close dropdown
+                if (fractalDropdown) fractalDropdown.classList.remove('open');
+            });
+        });
+        
+        // Close dropdown on outside click
+        document.addEventListener('click', (e) => {
+            if (fractalDropdown && !fractalDropdown.contains(e.target) && 
+                fractalBtn && !fractalBtn.contains(e.target)) {
+                fractalDropdown.classList.remove('open');
+            }
+        });
+        
+        // === ITERATIONS SLIDER (id="max-iterations") ===
+        const iterSlider = document.getElementById('max-iterations');
+        const iterValueInput = document.getElementById('max-iterations-value');
+        
         if (iterSlider) {
+            iterSlider.value = this.params.maxIterations;
+            
             iterSlider.addEventListener('input', (e) => {
-                this.params.maxIterations = parseInt(e.target.value);
-                if (iterInput) iterInput.value = e.target.value;
-                this.render();
-            });
-        }
-        if (iterInput) {
-            iterInput.addEventListener('change', (e) => {
-                this.params.maxIterations = parseInt(e.target.value) || 500;
-                if (iterSlider) iterSlider.value = this.params.maxIterations;
+                const val = parseInt(e.target.value);
+                this.params.maxIterations = val;
+                if (iterValueInput) iterValueInput.value = val;
+                console.log('[App] Iterations changed:', val);
                 this.render();
             });
         }
         
-        // Quick iteration buttons
-        document.querySelectorAll('[data-iterations]').forEach(el => {
+        if (iterValueInput) {
+            iterValueInput.value = this.params.maxIterations;
+            
+            iterValueInput.addEventListener('change', (e) => {
+                const val = parseInt(e.target.value) || 500;
+                this.params.maxIterations = val;
+                if (iterSlider) iterSlider.value = val;
+                console.log('[App] Iterations input changed:', val);
+                this.render();
+            });
+        }
+        
+        // Quick iteration buttons (data-iter attribute)
+        document.querySelectorAll('[data-iter]').forEach(el => {
             el.addEventListener('click', () => {
-                this.params.maxIterations = parseInt(el.dataset.iterations);
-                if (iterSlider) iterSlider.value = this.params.maxIterations;
-                if (iterInput) iterInput.value = this.params.maxIterations;
+                const val = parseInt(el.dataset.iter);
+                this.params.maxIterations = val;
+                if (iterSlider) iterSlider.value = val;
+                if (iterValueInput) iterValueInput.value = val;
+                // Update active state
+                document.querySelectorAll('[data-iter]').forEach(b => b.classList.remove('active'));
+                el.classList.add('active');
+                console.log('[App] Quick iterations:', val);
                 this.render();
             });
         });
         
-        // Sidebar toggle
-        const sidebarToggle = document.getElementById('sidebar-toggle');
-        const sidebar = document.getElementById('sidebar');
-        if (sidebarToggle && sidebar) {
-            sidebarToggle.addEventListener('click', () => {
-                sidebar.classList.toggle('collapsed');
+        // === BAILOUT BUTTONS ===
+        document.querySelectorAll('[data-bailout]').forEach(el => {
+            el.addEventListener('click', () => {
+                const val = parseInt(el.dataset.bailout);
+                // Update active state
+                document.querySelectorAll('[data-bailout]').forEach(b => b.classList.remove('active'));
+                el.classList.add('active');
+                console.log('[App] Bailout:', val);
+                this.render();
             });
-        }
+        });
         
-        // Modal close buttons
+        // === ZOOM BUTTONS ===
+        document.querySelectorAll('[data-zoom]').forEach(el => {
+            el.addEventListener('click', () => {
+                const factor = parseFloat(el.dataset.zoom);
+                this.zoomAt(factor);
+                this.saveToHistory();
+            });
+        });
+        
+        // === GENERIC ACTION BUTTONS ===
+        document.querySelectorAll('[data-action]').forEach(el => {
+            el.addEventListener('click', () => {
+                const action = el.dataset.action;
+                console.log('[App] Action:', action);
+                switch (action) {
+                    case 'reset': this.reset(); break;
+                    case 'undo': this.undo(); break;
+                    case 'redo': this.redo(); break;
+                    case 'screenshot': this.screenshot(); break;
+                    case 'fullscreen': this.toggleFullscreen(); break;
+                    case 'copy-url': this.copyURL(); break;
+                    case 'random': this.randomLocation(); break;
+                    case 'bookmark': this.addBookmark(); break;
+                }
+            });
+        });
+        
+        // === SIDEBAR TOGGLE ===
+        this.bindClick('sidebar-toggle', () => {
+            const sidebar = document.getElementById('sidebar');
+            if (sidebar) sidebar.classList.toggle('collapsed');
+        });
+        
+        // === MODAL CLOSE BUTTONS ===
         document.querySelectorAll('.modal-close, [data-close-modal]').forEach(el => {
             el.addEventListener('click', () => {
-                el.closest('.modal')?.classList.remove('active');
+                const modal = el.closest('.modal');
+                if (modal) modal.classList.remove('active');
             });
         });
         
-        // Modal overlay clicks
-        document.querySelectorAll('.modal-overlay').forEach(el => {
+        // === MODAL OVERLAY CLICK ===
+        document.querySelectorAll('.modal-overlay, .modal-backdrop').forEach(el => {
             el.addEventListener('click', (e) => {
                 if (e.target === el) {
-                    el.closest('.modal')?.classList.remove('active');
+                    const modal = el.closest('.modal');
+                    if (modal) modal.classList.remove('active');
                 }
             });
         });
+        
+        // === PANEL CLOSE BUTTONS ===
+        document.querySelectorAll('.panel-close').forEach(el => {
+            el.addEventListener('click', () => {
+                const panel = el.closest('.slide-panel');
+                if (panel) panel.hidden = true;
+            });
+        });
+        
+        // === PALETTE PRESET ===
+        const paletteSelect = document.getElementById('palette-preset');
+        if (paletteSelect) {
+            paletteSelect.addEventListener('change', (e) => {
+                console.log('[App] Palette changed:', e.target.value);
+                // Could add palette switching here
+                this.render();
+            });
+        }
         
         console.log('[App] UI controls setup complete');
     }
     
-    bindButton(id, handler) {
+    bindClick(id, handler) {
         const el = document.getElementById(id);
         if (el) {
             el.addEventListener('click', (e) => {
@@ -573,34 +592,47 @@ class App {
                 console.log('[App] Button clicked:', id);
                 handler();
             });
-        } else {
-            // Try class-based selector
-            document.querySelectorAll('.' + id).forEach(btn => {
-                btn.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    console.log('[App] Button clicked:', id);
-                    handler();
-                });
-            });
         }
     }
     
     // ═══════════════════════════════════════════════════════════════════════
-    // NAVIGATION METHODS
+    // PANEL & MODAL TOGGLING
     // ═══════════════════════════════════════════════════════════════════════
     
-    zoomAt(factor, screenX = null, screenY = null) {
+    togglePanel(id) {
+        const panel = document.getElementById(id);
+        if (panel) {
+            const isHidden = panel.hidden;
+            // Close all panels first
+            document.querySelectorAll('.slide-panel').forEach(p => p.hidden = true);
+            // Toggle this one
+            panel.hidden = !isHidden;
+            console.log('[App] Panel toggled:', id, 'hidden:', panel.hidden);
+        }
+    }
+    
+    toggleModal(id) {
+        const modal = document.getElementById(id);
+        if (modal) {
+            modal.classList.toggle('active');
+            console.log('[App] Modal toggled:', id, 'active:', modal.classList.contains('active'));
+        }
+    }
+    
+    // ═══════════════════════════════════════════════════════════════════════
+    // NAVIGATION
+    // ═══════════════════════════════════════════════════════════════════════
+    
+    zoomAt(factor, sx = null, sy = null) {
         const scale = 4 / this.params.zoom;
         const ar = this.canvas.width / this.canvas.height;
         
-        if (screenX !== null && screenY !== null) {
+        if (sx !== null && sy !== null) {
             const rect = this.canvas.getBoundingClientRect();
-            const nx = (screenX - rect.left) / rect.width;
-            const ny = 1 - (screenY - rect.top) / rect.height; // Flip Y
-            
+            const nx = (sx - rect.left) / rect.width;
+            const ny = 1 - (sy - rect.top) / rect.height;
             const fx = this.params.centerX + (nx - 0.5) * scale * ar;
             const fy = this.params.centerY + (ny - 0.5) * scale;
-            
             this.params.centerX = fx + (this.params.centerX - fx) / factor;
             this.params.centerY = fy + (this.params.centerY - fy) / factor;
         }
@@ -613,9 +645,8 @@ class App {
         const rect = this.canvas.getBoundingClientRect();
         const scale = 4 / this.params.zoom;
         const ar = this.canvas.width / this.canvas.height;
-        
         this.params.centerX -= (dx / rect.width) * scale * ar;
-        this.params.centerY += (dy / rect.height) * scale; // Flip Y
+        this.params.centerY += (dy / rect.height) * scale;
         this.render();
     }
     
@@ -633,13 +664,18 @@ class App {
         this.params.zoom = 1;
         this.saveToHistory();
         this.render();
+        console.log('[App] View reset');
     }
     
     setFractalType(type) {
         console.log('[App] Setting fractal type:', type);
         this.params.fractalType = type;
         
-        // Update UI
+        // Update select element
+        const select = document.getElementById('fractal-select-2d');
+        if (select) select.value = type;
+        
+        // Update dropdown items
         document.querySelectorAll('[data-fractal]').forEach(el => {
             el.classList.toggle('active', el.dataset.fractal === type);
         });
@@ -654,70 +690,53 @@ class App {
                     julia: 'Julia Set',
                     burningship: 'Burning Ship',
                     'burning-ship': 'Burning Ship',
-                    tricorn: 'Tricorn'
+                    tricorn: 'Tricorn',
+                    multibrot: 'Multibrot'
                 };
                 nameEl.textContent = names[type] || type;
             }
         }
-        
-        // Close dropdown
-        document.getElementById('fractal-dropdown')?.classList.remove('open');
         
         this.reset();
     }
     
     setMode(mode) {
         console.log('[App] Setting mode:', mode);
-        // For now just log - 3D would need Three.js
         document.querySelectorAll('.mode-btn').forEach(el => {
             el.classList.toggle('active', el.id === 'mode-' + mode);
         });
     }
     
     // ═══════════════════════════════════════════════════════════════════════
-    // HISTORY (UNDO/REDO)
+    // HISTORY
     // ═══════════════════════════════════════════════════════════════════════
     
     saveToHistory() {
-        const state = {
-            centerX: this.params.centerX,
-            centerY: this.params.centerY,
-            zoom: this.params.zoom,
-            fractalType: this.params.fractalType
-        };
-        
-        // Remove any future states if we're not at the end
+        const state = { ...this.params };
         if (this.historyIndex < this.history.length - 1) {
             this.history = this.history.slice(0, this.historyIndex + 1);
         }
-        
         this.history.push(state);
-        if (this.history.length > this.maxHistory) {
-            this.history.shift();
-        }
+        if (this.history.length > 50) this.history.shift();
         this.historyIndex = this.history.length - 1;
     }
     
     undo() {
         if (this.historyIndex > 0) {
             this.historyIndex--;
-            this.restoreState(this.history[this.historyIndex]);
+            Object.assign(this.params, this.history[this.historyIndex]);
+            this.render();
+            console.log('[App] Undo');
         }
     }
     
     redo() {
         if (this.historyIndex < this.history.length - 1) {
             this.historyIndex++;
-            this.restoreState(this.history[this.historyIndex]);
+            Object.assign(this.params, this.history[this.historyIndex]);
+            this.render();
+            console.log('[App] Redo');
         }
-    }
-    
-    restoreState(state) {
-        this.params.centerX = state.centerX;
-        this.params.centerY = state.centerY;
-        this.params.zoom = state.zoom;
-        this.params.fractalType = state.fractalType;
-        this.render();
     }
     
     // ═══════════════════════════════════════════════════════════════════════
@@ -725,9 +744,8 @@ class App {
     // ═══════════════════════════════════════════════════════════════════════
     
     loadBookmarks() {
-        try {
-            return JSON.parse(localStorage.getItem('abyss-bookmarks') || '[]');
-        } catch { return []; }
+        try { return JSON.parse(localStorage.getItem('abyss-bookmarks') || '[]'); }
+        catch { return []; }
     }
     
     saveBookmarks() {
@@ -735,16 +753,12 @@ class App {
     }
     
     addBookmark() {
-        const bookmark = {
+        this.bookmarks.push({
             id: Date.now(),
             name: `Bookmark ${this.bookmarks.length + 1}`,
-            centerX: this.params.centerX,
-            centerY: this.params.centerY,
-            zoom: this.params.zoom,
-            fractalType: this.params.fractalType,
+            ...this.params,
             timestamp: new Date().toISOString()
-        };
-        this.bookmarks.push(bookmark);
+        });
         this.saveBookmarks();
         this.showNotification('Bookmark added!');
     }
@@ -769,43 +783,25 @@ class App {
         }
     }
     
-    toggleModal(id) {
-        const modal = document.getElementById(id);
-        if (modal) {
-            modal.classList.toggle('active');
-        }
-    }
-    
-    shareLocation() {
-        const url = this.getShareURL();
+    copyURL() {
+        const p = this.params;
+        const url = `${location.origin}${location.pathname}#x=${p.centerX}&y=${p.centerY}&z=${p.zoom}&f=${p.fractalType}&i=${p.maxIterations}`;
         navigator.clipboard.writeText(url).then(() => {
-            this.showNotification('URL copied to clipboard!');
+            this.showNotification('URL copied!');
         }).catch(() => {
             prompt('Copy this URL:', url);
         });
     }
     
-    copyURL() {
-        this.shareLocation();
-    }
-    
-    getShareURL() {
-        const p = this.params;
-        const hash = `#x=${p.centerX}&y=${p.centerY}&z=${p.zoom}&f=${p.fractalType}&i=${p.maxIterations}`;
-        return window.location.origin + window.location.pathname + hash;
-    }
-    
     randomLocation() {
-        // Random interesting locations in Mandelbrot set
-        const locations = [
+        const locs = [
             { x: -0.7436447860, y: 0.1318252536, z: 1e8 },
             { x: -0.7453, y: 0.1127, z: 5000 },
             { x: -0.16, y: 1.0405, z: 100 },
             { x: -1.25066, y: 0.02012, z: 2000 },
-            { x: -0.748, y: 0.1, z: 300 },
             { x: 0.001643721971153, y: 0.822467633298876, z: 1e6 }
         ];
-        const loc = locations[Math.floor(Math.random() * locations.length)];
+        const loc = locs[Math.floor(Math.random() * locs.length)];
         this.params.centerX = loc.x;
         this.params.centerY = loc.y;
         this.params.zoom = loc.z;
@@ -816,30 +812,42 @@ class App {
     
     showNotification(msg) {
         console.log('[App] Notification:', msg);
-        // Try to use existing notification system
-        const container = document.getElementById('notifications') || document.getElementById('toast-container');
+        const container = document.getElementById('toast-container');
         if (container) {
             const toast = document.createElement('div');
             toast.className = 'toast';
-            toast.textContent = msg;
+            toast.innerHTML = `<span class="toast-message">${msg}</span>`;
             container.appendChild(toast);
-            setTimeout(() => toast.remove(), 3000);
+            // Trigger animation
+            requestAnimationFrame(() => toast.classList.add('show'));
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
         }
     }
     
     updateInfo() {
-        const zoomEl = document.getElementById('zoom-level') || document.getElementById('info-zoom');
-        if (zoomEl) {
-            const exp = Math.log10(this.params.zoom);
-            zoomEl.textContent = exp >= 3 ? `10^${exp.toFixed(1)}` : `${this.params.zoom.toFixed(2)}x`;
-        }
+        // Zoom displays
+        const exp = Math.log10(this.params.zoom);
+        const zoomText = exp >= 3 ? `10^${exp.toFixed(1)}` : `${this.params.zoom.toFixed(2)}x`;
         
-        const coordRe = document.getElementById('coord-real');
-        const coordIm = document.getElementById('coord-imag');
+        ['zoom-level', 'coord-zoom', 'zoom-level-value', 'zoom-mag'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.textContent = zoomText;
+        });
+        
+        const zoomExp = document.getElementById('zoom-exponent') || document.getElementById('coord-zoom-exp');
+        if (zoomExp) zoomExp.textContent = exp.toFixed(2);
+        
+        // Coordinate displays
+        const coordRe = document.getElementById('coord-real') || document.getElementById('center-real');
+        const coordIm = document.getElementById('coord-imag') || document.getElementById('center-imag');
         if (coordRe) coordRe.textContent = this.params.centerX.toFixed(12);
         if (coordIm) coordIm.textContent = this.params.centerY.toFixed(12);
         
-        const iterEl = document.getElementById('info-iterations');
+        // Iteration display
+        const iterEl = document.getElementById('coord-iter');
         if (iterEl) iterEl.textContent = this.params.maxIterations;
     }
     
@@ -859,16 +867,9 @@ class App {
     
     showError(msg) {
         const el = document.querySelector('.loading-text') || document.getElementById('loading-status');
-        if (el) {
-            el.textContent = `Error: ${msg}`;
-            el.style.color = '#ff4444';
-        }
+        if (el) { el.textContent = `Error: ${msg}`; el.style.color = '#ff4444'; }
     }
 }
-
-// ═══════════════════════════════════════════════════════════════════════════
-// BOOTSTRAP
-// ═══════════════════════════════════════════════════════════════════════════
 
 async function bootstrap() {
     console.log('[Bootstrap] Starting...');
