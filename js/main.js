@@ -978,6 +978,19 @@ async function bootstrap() {
     window.AbyssExplorer = app;
     window.abyssExplorer = app;
     
+    // Expose methods that HTML expects
+    window.AbyssExplorer.handleKeyDown = (e) => app._handleKeyboard(e);
+    window.AbyssExplorer.setFractalType = (type) => app.setFractalType(type);
+    window.AbyssExplorer.setMode = (mode) => app._setMode(mode);
+    window.AbyssExplorer.reset = () => app.reset();
+    window.AbyssExplorer.undo = () => app.undo();
+    window.AbyssExplorer.redo = () => app.redo();
+    window.AbyssExplorer.screenshot = () => app.screenshot();
+    window.AbyssExplorer.toggleFullscreen = () => app.toggleFullscreen();
+    window.AbyssExplorer.randomLocation = () => app.randomLocation();
+    window.AbyssExplorer.addBookmark = () => app.addBookmark();
+    window.AbyssExplorer.shareURL = () => app.shareURL();
+    
     console.log('🌀 Abyss Explorer v1.0.0 Ready');
     console.log('Explore the infinite depths of mathematical beauty.');
     console.log('Press ? for keyboard shortcuts.');
