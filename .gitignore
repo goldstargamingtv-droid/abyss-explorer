@@ -1,248 +1,73 @@
-# ============================================================================
-# ABYSS EXPLORER - Git Ignore Configuration
-# ============================================================================
-
-# ----------------------------------------------------------------------------
-# Operating System Files
-# ----------------------------------------------------------------------------
-
-# macOS
-.DS_Store
-.DS_Store?
-._*
-.Spotlight-V100
-.Trashes
-.AppleDouble
-.LSOverride
-Icon?
-
-# Windows
-Thumbs.db
-Thumbs.db:encryptable
-ehthumbs.db
-ehthumbs_vista.db
-*.stackdump
-[Dd]esktop.ini
-$RECYCLE.BIN/
-*.lnk
-
-# Linux
-*~
-.fuse_hidden*
-.directory
-.Trash-*
-.nfs*
-
-# ----------------------------------------------------------------------------
-# IDE / Editor Files
-# ----------------------------------------------------------------------------
-
-# VS Code
-.vscode/
-*.code-workspace
-
-# JetBrains (WebStorm, IntelliJ)
-.idea/
-*.iml
-*.ipr
-*.iws
-out/
-.idea_modules/
-
-# Sublime Text
-*.sublime-project
-*.sublime-workspace
-
-# Vim
-*.swp
-*.swo
-*.swn
-*~
-.vim/
-Session.vim
-.netrwhist
-tags
-
-# Emacs
-*~
-\#*\#
-/.emacs.desktop
-/.emacs.desktop.lock
-*.elc
-auto-save-list
-tramp
-.\#*
-
-# Atom
-.atom/
-
-# ----------------------------------------------------------------------------
-# Node.js / Package Manager
-# ----------------------------------------------------------------------------
-
 # Dependencies
 node_modules/
-jspm_packages/
-bower_components/
+__pycache__/
+*.pyc
+.pnp
+.pnp.js
 
-# Package manager files
-package-lock.json
-yarn.lock
-pnpm-lock.yaml
-.pnpm-store/
-
-# npm
-.npm
-.npmrc
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-
-# ----------------------------------------------------------------------------
-# Build Artifacts
-# ----------------------------------------------------------------------------
-
-# Build directories
-dist/
-build/
-out/
-.cache/
-.parcel-cache/
-.next/
-.nuxt/
-.output/
-.vite/
-
-# Compiled files
-*.min.js
-*.min.css
-*.bundle.js
-*.bundle.css
-
-# Source maps (uncomment if you don't want to commit these)
-# *.map
-# *.js.map
-# *.css.map
-
-# TypeScript
-*.tsbuildinfo
-
-# ----------------------------------------------------------------------------
 # Testing
-# ----------------------------------------------------------------------------
-
-# Coverage reports
 coverage/
-.nyc_output/
-*.lcov
+.pytest_cache/
+.coverage
+htmlcov/
 
-# Test artifacts
-test-results/
-playwright-report/
-.playwright/
+# Build
+.next/
+out/
+build/
+dist/
+*.egg-info/
 
-# ----------------------------------------------------------------------------
-# Environment & Secrets
-# ----------------------------------------------------------------------------
-
-# Environment files
+# Environment
 .env
 .env.local
 .env.development.local
 .env.test.local
 .env.production.local
-.env*.local
+*.env
 
-# Secrets
-*.pem
-*.key
-*.cert
-secrets/
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
 
-# ----------------------------------------------------------------------------
-# Application-Specific
-# ----------------------------------------------------------------------------
+# OS
+.DS_Store
+Thumbs.db
 
-# Local storage dumps (if exported for debugging)
-localstorage-dump*.json
-indexeddb-dump*/
-
-# Exported frames (can get large during video rendering)
-exports/frames/
-render-cache/
-
-# High-resolution exports (temporary)
-*.tmp.png
-*.tmp.jpg
-export-*.png
-export-*.jpg
-export-*.webm
-export-*.mp4
-export-*.gif
-
-# Debug logs
-debug.log
-error.log
+# Logs
+logs/
 *.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
 
-# Benchmark/profiling data
-benchmarks/results/
-*.cpuprofile
-*.heapprofile
-*.heapsnapshot
+# Database
+*.sqlite
+*.sqlite3
+*.db
 
-# User preferences (local customizations)
-user-settings.json
-custom-presets-local.json
+# Uploads and backups (keep structure, ignore content)
+backend/data/uploads/*
+!backend/data/uploads/.gitkeep
+backend/data/backups/*
+!backend/data/backups/.gitkeep
 
-# ----------------------------------------------------------------------------
-# Documentation Build
-# ----------------------------------------------------------------------------
+# SSL certs
+nginx/ssl/*
+!nginx/ssl/.gitkeep
 
-# Generated docs
-docs/_build/
-docs/site/
-.docusaurus/
+# Python virtual env
+venv/
+.venv/
+env/
 
-# ----------------------------------------------------------------------------
-# Miscellaneous
-# ----------------------------------------------------------------------------
+# Type stubs
+.mypy_cache/
 
-# Backup files
+# Misc
 *.bak
-*.backup
-*.old
-*.orig
-
-# Temporary files
 *.tmp
-*.temp
-tmp/
-temp/
-
-# Compressed archives (don't commit built releases to repo)
-*.zip
-*.tar.gz
-*.rar
-*.7z
-
-# Large binary files
-*.psd
-*.ai
-*.sketch
-
-# ----------------------------------------------------------------------------
-# Optional: Uncomment if needed
-# ----------------------------------------------------------------------------
-
-# Ignore all assets except icons (if assets are generated)
-# assets/images/generated/
-
-# Ignore preset thumbnails if auto-generated
-# assets/thumbnails/
-
-# Ignore specific large preset files during development
-# js/presets/*-presets.js
-
-# Keep gitkeep files for empty directories
-!.gitkeep
+.vercel
