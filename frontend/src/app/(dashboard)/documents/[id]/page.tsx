@@ -37,7 +37,7 @@ export default function DocumentPage() {
   useEffect(() => {
     const fetchDocument = async () => {
       try {
-        const response = await api.get(`/api/documents/${documentId}`);
+        const response = await api.get(`/documents/${documentId}`);
         setDocument(response.data);
         setTitle(response.data.title);
         setContent(response.data.content);
@@ -69,7 +69,7 @@ export default function DocumentPage() {
     setIsSaving(true);
 
     try {
-      const response = await api.patch(`/api/documents/${documentId}`, {
+      const response = await api.patch(`/documents/${documentId}`, {
         title: title.trim(),
         content: content,
       });
@@ -98,7 +98,7 @@ export default function DocumentPage() {
     }
 
     try {
-      await api.delete(`/api/documents/${documentId}`);
+      await api.delete(`/documents/${documentId}`);
       toast({
         title: "Deleted",
         description: "Document has been deleted.",
@@ -118,7 +118,7 @@ export default function DocumentPage() {
 
     try {
       const response = await api.post(
-        `/api/documents/${documentId}/pin?pinned=${!document.is_pinned}`
+        `/documents/${documentId}/pin?pinned=${!document.is_pinned}`
       );
       setDocument(response.data);
       toast({

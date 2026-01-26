@@ -30,7 +30,7 @@ export default function NewDocumentPage() {
     setIsSaving(true);
 
     try {
-      const response = await api.post("/api/documents", {
+      const response = await api.post("/documents", {
         title: title.trim(),
         content: content,
         doc_type: "note",

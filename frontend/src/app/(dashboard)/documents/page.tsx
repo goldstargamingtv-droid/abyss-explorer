@@ -57,7 +57,7 @@ export default function DocumentsPage() {
 
   const fetchDocuments = async () => {
     try {
-      const response = await api.get("/api/documents", {
+      const response = await api.get("/documents", {
         params: {
           query: searchQuery || undefined,
         },
@@ -89,7 +89,7 @@ export default function DocumentsPage() {
 
   const handleDelete = async (id: string) => {
     try {
-      await api.delete(`/api/documents/${id}`);
+      await api.delete(`/documents/${id}`);
       setDocuments(documents.filter((d) => d.id !== id));
       toast({
         title: "Document deleted",
@@ -106,7 +106,7 @@ export default function DocumentsPage() {
 
   const handlePin = async (id: string, pinned: boolean) => {
     try {
-      await api.post(`/api/documents/${id}/pin?pinned=${!pinned}`);
+      await api.post(`/documents/${id}/pin?pinned=${!pinned}`);
       setDocuments(
         documents.map((d) =>
           d.id === id ? { ...d, is_pinned: !pinned } : d
