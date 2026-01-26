@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import {
   FileText,
@@ -10,6 +10,10 @@ import {
   List,
   SortAsc,
   Filter,
+  Pin,
+  Trash2,
+  MoreVertical,
+  Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,16 +24,117 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { useUIStore } from "@/stores/uiStore";
+import { useToast } from "@/hooks/useToast";
+import { api } from "@/lib/api";
 import { cn } from "@/lib/utils";
+
+interface Document {
+  id: string;
+  title: string;
+  content: string;
+  doc_type: string;
+  is_pinned: boolean;
+  is_archived: boolean;
+  created_at: string;
+  updated_at: string;
+  tags: string[];
+}
 
 export default function DocumentsPage() {
   const router = useRouter();
+  const { toast } = useToast();
   const { viewMode, setViewMode } = useUIStore();
   const [searchQuery, setSearchQuery] = useState("");
+  const [documents, setDocuments] = useState<Document[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  // Placeholder for empty state
-  const documents: unknown[] = [];
+  const fetchDocuments = async () => {
+    try {
+      const response = await api.get("/api/documents", {
+        params: {
+          query: searchQuery || undefined,
+        },
+      });
+      setDocuments(response.data.items);
+    } catch (error) {
+      console.error("Failed to fetch documents:", error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to load documents.",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchDocuments();
+  }, []);
+
+  // Debounced search
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      fetchDocuments();
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  const handleDelete = async (id: string) => {
+    try {
+      await api.delete(`/api/documents/${id}`);
+      setDocuments(documents.filter((d) => d.id !== id));
+      toast({
+        title: "Document deleted",
+        description: "The document has been permanently deleted.",
+      });
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to delete document.",
+      });
+    }
+  };
+
+  const handlePin = async (id: string, pinned: boolean) => {
+    try {
+      await api.post(`/api/documents/${id}/pin?pinned=${!pinned}`);
+      setDocuments(
+        documents.map((d) =>
+          d.id === id ? { ...d, is_pinned: !pinned } : d
+        )
+      );
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to update document.",
+      });
+    }
+  };
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    });
+  };
+
+  const getPreview = (content: string) => {
+    // Strip HTML tags and get first 150 chars
+    const text = content.replace(/<[^>]*>/g, "");
+    return text.length > 150 ? text.substring(0, 150) + "..." : text;
+  };
 
   return (
     <div className="space-y-6">
@@ -94,7 +199,11 @@ export default function DocumentsPage() {
       </div>
 
       {/* Content */}
-      {documents.length === 0 ? (
+      {isLoading ? (
+        <div className="flex items-center justify-center py-16">
+          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        </div>
+      ) : documents.length === 0 ? (
         <Card className="border-dashed">
           <CardContent className="flex flex-col items-center justify-center py-16">
             <div className="rounded-full bg-muted p-4 mb-4">
@@ -126,7 +235,71 @@ export default function DocumentsPage() {
               : "space-y-2"
           )}
         >
-          {/* Document list will be rendered here */}
+          {documents.map((doc) => (
+            <Card
+              key={doc.id}
+              className={cn(
+                "cursor-pointer hover:border-primary/50 transition-colors",
+                viewMode === "list" && "flex items-center"
+              )}
+              onClick={() => router.push(`/documents/${doc.id}`)}
+            >
+              <CardHeader className={cn(viewMode === "list" && "flex-1 py-3")}>
+                <div className="flex items-start justify-between">
+                  <div className="flex items-center gap-2">
+                    {doc.is_pinned && (
+                      <Pin className="h-3 w-3 text-primary fill-primary" />
+                    )}
+                    <CardTitle className="text-base line-clamp-1">
+                      {doc.title}
+                    </CardTitle>
+                  </div>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+                      <Button variant="ghost" size="icon" className="h-8 w-8">
+                        <MoreVertical className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handlePin(doc.id, doc.is_pinned);
+                        }}
+                      >
+                        <Pin className="h-4 w-4 mr-2" />
+                        {doc.is_pinned ? "Unpin" : "Pin"}
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        className="text-destructive"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDelete(doc.id);
+                        }}
+                      >
+                        <Trash2 className="h-4 w-4 mr-2" />
+                        Delete
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
+                {viewMode === "grid" && (
+                  <CardDescription className="line-clamp-2 mt-1">
+                    {getPreview(doc.content) || "No content"}
+                  </CardDescription>
+                )}
+                <div className="flex items-center gap-2 mt-2 text-xs text-muted-foreground">
+                  <span>{formatDate(doc.updated_at)}</span>
+                  {doc.tags.length > 0 && (
+                    <>
+                      <span>·</span>
+                      <span>{doc.tags.slice(0, 2).join(", ")}</span>
+                    </>
+                  )}
+                </div>
+              </CardHeader>
+            </Card>
+          ))}
         </div>
       )}
     </div>

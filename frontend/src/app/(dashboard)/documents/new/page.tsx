@@ -6,7 +6,9 @@ import { ArrowLeft, Save } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { TipTapEditor } from "@/components/editor/TipTapEditor";
 import { useToast } from "@/hooks/useToast";
+import { api } from "@/lib/api";
 
 export default function NewDocumentPage() {
   const router = useRouter();
@@ -28,17 +30,25 @@ export default function NewDocumentPage() {
     setIsSaving(true);
 
     try {
-      // TODO: Implement document creation API call
+      const response = await api.post("/api/documents", {
+        title: title.trim(),
+        content: content,
+        doc_type: "note",
+      });
+
       toast({
         title: "Document created",
         description: "Your document has been saved successfully.",
       });
-      router.push("/documents");
-    } catch {
+
+      // Navigate to the new document
+      router.push(`/documents/${response.data.id}`);
+    } catch (error: unknown) {
+      const err = error as { response?: { data?: { detail?: string } } };
       toast({
         variant: "destructive",
         title: "Error",
-        description: "Failed to save document. Please try again.",
+        description: err.response?.data?.detail || "Failed to save document. Please try again.",
       });
     } finally {
       setIsSaving(false);
@@ -84,19 +94,12 @@ export default function NewDocumentPage() {
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="content">Content</Label>
-          <div className="min-h-[400px] rounded-lg border bg-background">
-            <textarea
-              id="content"
-              placeholder="Start writing... (Rich text editor coming in Phase 2)"
-              value={content}
-              onChange={(e) => setContent(e.target.value)}
-              className="w-full h-full min-h-[400px] p-4 bg-transparent resize-none focus:outline-none"
-            />
-          </div>
-          <p className="text-xs text-muted-foreground">
-            Tip: Use Markdown syntax for formatting. Full TipTap editor coming soon!
-          </p>
+          <Label>Content</Label>
+          <TipTapEditor
+            content={content}
+            onChange={setContent}
+            placeholder="Start writing your document..."
+          />
         </div>
       </div>
     </div>
