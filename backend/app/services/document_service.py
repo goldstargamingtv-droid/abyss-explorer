@@ -1,4 +1,5 @@
 """Document service for CRUD operations."""
+from __future__ import annotations
 
 import logging
 import math
