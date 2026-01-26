@@ -1,0 +1,35 @@
+"use client";
+
+import { Tag, Plus } from "lucide-react";
+import { Button } from "@/components/ui/button";
+
+export default function TagsPage() {
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">Tags</h1>
+          <p className="text-muted-foreground">
+            Manage tags to categorize and find your documents
+          </p>
+        </div>
+        <Button>
+          <Plus className="h-4 w-4 mr-2" />
+          New Tag
+        </Button>
+      </div>
+
+      <div className="flex flex-col items-center justify-center min-h-[400px] rounded-lg border border-dashed">
+        <Tag className="h-12 w-12 text-muted-foreground mb-4" />
+        <h3 className="text-lg font-semibold">No tags yet</h3>
+        <p className="text-muted-foreground text-center max-w-sm mt-1">
+          Tags will be automatically created as you add them to documents, or create them manually here.
+        </p>
+        <Button className="mt-4">
+          <Plus className="h-4 w-4 mr-2" />
+          Create your first tag
+        </Button>
+      </div>
+    </div>
+  );
+}
