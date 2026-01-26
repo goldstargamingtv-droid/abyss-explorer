@@ -60,7 +60,7 @@ class DocumentService:
         result = await self.db.execute(
             select(Document)
             .where(Document.id == document_id)
-            .options(selectinload(Document.tags))
+            .options(selectinload(Document.document_tags))
         )
         document = result.scalar_one_or_none()
 
@@ -86,7 +86,7 @@ class DocumentService:
         query = (
             select(Document)
             .where(Document.user_id == user.id)
-            .options(selectinload(Document.tags))
+            .options(selectinload(Document.document_tags))
         )
 
         # Apply filters

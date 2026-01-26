@@ -30,7 +30,7 @@ def document_to_response(doc) -> DocumentResponse:
         is_archived=doc.is_archived,
         created_at=doc.created_at,
         updated_at=doc.updated_at,
-        tags=[tag.name for tag in doc.tags] if doc.tags else [],
+        tags=[dt.tag.name for dt in doc.document_tags if dt.tag] if doc.document_tags else [],
     )
 
 
